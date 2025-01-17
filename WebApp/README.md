@@ -1,4 +1,4 @@
-# UNO-Onboarding
+# WebApp
 
 ## Prerequisites
 
