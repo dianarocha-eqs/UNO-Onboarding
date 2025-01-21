@@ -2,11 +2,12 @@ import { Component } from '@angular/core';
 import { SensorService } from '../sensor.service';
 import { sensor, sensorCategory, sensorColor, sensorVisibility } from '../interfaces/sensor';
 import { take } from 'rxjs';
+import { RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-sensor-add',
   standalone: true,
-  imports: [],
+  imports: [RouterModule],
   templateUrl: './sensor-add.component.html',
   styleUrl: './sensor-add.component.css'
 })

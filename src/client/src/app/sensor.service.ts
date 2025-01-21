@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
+import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
+import { Observable, of, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { sensor } from './interfaces/sensor'; // Assuming sensor interface is defined elsewhere
 
@@ -8,16 +8,17 @@ import { sensor } from './interfaces/sensor'; // Assuming sensor interface is de
   providedIn: 'root'
 })
 export class SensorService {
-  private baseurl = 'api/sensors'; // URL to your backend API for sensors
+  private baseurl = 'http://localhost:8080/api/sensors'; // URL to your backend API for sensors
 
   constructor(private http: HttpClient) {}
 
    // GET
-  getSensors(page: number = 1, size: number = 10, sort: string = 'name'): Observable<sensor[]> {
+   getSensors(page: number = 1, size: number = 10, sort: string = 'name'): Observable<sensor[]> {
     return this.http.get<sensor[]>(`${this.baseurl}?page=${page}&size=${size}&sort=${sort}`).pipe(
       catchError(this.handleError<sensor[]>('getSensors', []))
     );
   }
+  
 
    // GET
   getSensorById(id: number): Observable<sensor> {
@@ -58,10 +59,11 @@ export class SensorService {
   }
 
   private handleError<T>(operation = 'operation', result?: T) {
-    return (error: any): Observable<T> => {
-      // Log the error and optionally show an error message
-      console.error(error); // Optionally, integrate a logging service
-      return of(result as T); // Let the app continue by returning a fallback result
+    return (error: HttpErrorResponse): Observable<T> => {
+      console.error(`${operation} failed: ${error.message}`);
+      // Show an alert or log to see what's happening
+      alert(`Error: ${operation} failed: ${error.message}`);  // This will pop up an alert if the API fails
+      return of(result as T);  // Fallback result (empty array in case of error)
     };
   }
   private getHttpOptions() {

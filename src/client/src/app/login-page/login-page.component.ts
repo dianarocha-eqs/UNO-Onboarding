@@ -1,6 +1,5 @@
 import { Component } from '@angular/core';
-
-import { Router, RouterModule } from '@angular/router';
+import { RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-login-page',
@@ -9,7 +8,6 @@ import { Router, RouterModule } from '@angular/router';
   templateUrl: './login-page.component.html',
   styleUrl: './login-page.component.css'
 })
-
 
 export class LoginPageComponent {
 }

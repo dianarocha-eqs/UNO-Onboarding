@@ -1,5 +1,4 @@
 import { Component } from '@angular/core';
-
 import {  RouterModule } from '@angular/router';
 
 @Component({
@@ -10,5 +9,4 @@ import {  RouterModule } from '@angular/router';
   styleUrl: './dashboard.component.css'
 })
 export class DashboardComponent {
-
 }
