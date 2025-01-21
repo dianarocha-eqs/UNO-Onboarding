@@ -3,36 +3,27 @@ export const routes: Routes = [
   {
     path: '',
     pathMatch: 'full',
-    redirectTo: 'home', // Default route
+    redirectTo: 'auth', // Default route to authentication
   },
   {
-    path: 'login',
-    loadComponent: () =>
-      import('./login-page/login-page.component').then((m) => m.LoginPageComponent),
+    path: 'auth',
+    loadChildren: () =>
+      import('./auth/auth.routes').then((m) => m.AUTH_ROUTES),
   },
   {
     path: 'home',
-    loadComponent: () =>
-      import('./home/home.component').then((m) => m.HomeComponent),
+    loadChildren: () =>
+      import('./home/home.routes').then((m) => m.HOME_ROUTES),
   },
   {
     path: 'dashboard',
-    loadComponent: () =>
-      import('./dashboard/dashboard.component').then((m) => m.DashboardComponent),
+    loadChildren: () =>
+      import('./dashboard/dashboard.routes').then((m) => m.DASHBOARD_ROUTES),
   },
   {
     path: 'sensors',
-    loadComponent: () => import('./sensors-list/sensors-list.component').then((m) => m.SensorsListComponent),
-  },
-  {
-    path: 'sensors/:id', 
-    loadComponent: () => 
-      import('./sensor-details/sensor-details.component').then(m => m.SensorDetailsComponent),
-  },
-  {
-    path: 'sensors/:id/edit', 
-    loadComponent: () => 
-      import('./sensor-edit/sensor-edit.component').then(m => m.SensorEditComponent),
+    loadChildren: () =>
+      import('./sensors-list/sensors-list.routes').then((m) => m.SENSORS_ROUTES),
   },
   {
     path: '**',
