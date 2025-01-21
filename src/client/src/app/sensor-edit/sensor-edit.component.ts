@@ -2,7 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule} from '@angular/router';
 
 import { SensorService } from '../sensor.service';
-import { sensor } from '../sensor';
+import { sensor } from '../interfaces/sensor';
+import { take } from 'rxjs';
 
 @Component({
   selector: 'app-sensor-edit',
@@ -29,7 +30,9 @@ export class SensorEditComponent implements OnInit{
   
   updateSensor(): void {
     if (this.sensor) {
-      this.sensorService.updateSensor(this.sensor.id, this.sensor).subscribe({
+      this.sensorService.updateSensor(this.sensor.id, this.sensor)
+      .pipe(take(1))
+      .subscribe({
         next: (updatedSensor) => {
           console.log('Sensor updated successfully:', updatedSensor);
           this.router.navigate([`/sensors/${updatedSensor.id}`]);

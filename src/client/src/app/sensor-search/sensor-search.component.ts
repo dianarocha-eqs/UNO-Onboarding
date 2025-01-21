@@ -7,7 +7,7 @@ import {
 } from 'rxjs/operators';
 
 import { SensorService } from '../sensor.service';
-import { sensor } from '../sensor';
+import { sensor } from '../interfaces/sensor';
 import { CommonModule, NgFor } from '@angular/common';
 
 @Component({

@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
-import { sensor } from './sensor'; // Assuming sensor interface is defined elsewhere
+import { sensor } from './interfaces/sensor'; // Assuming sensor interface is defined elsewhere
 
 @Injectable({
   providedIn: 'root'

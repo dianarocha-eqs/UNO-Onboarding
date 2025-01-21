@@ -2,7 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { RouterModule } from '@angular/router';
 
 import { SensorService } from '../sensor.service';
-import { sensor } from '../sensor';
+import { sensor } from '../interfaces/sensor';
+import { take } from 'rxjs';
 
 @Component({
   selector: 'app-sensors-list',
@@ -22,6 +23,8 @@ export class SensorsListComponent implements OnInit {
   }
 
   getSensors(): void {
-    this.sensorService.getSensors().subscribe(sensors => this.sensors = sensors);
+    this.sensorService.getSensors()
+    .pipe(take(1))
+    .subscribe(sensors => this.sensors = sensors);
   }
 }

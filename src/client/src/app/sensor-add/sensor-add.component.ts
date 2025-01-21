@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { SensorService } from '../sensor.service';
-import { sensor } from '../sensor';
+import { sensor, sensorCategory, sensorColor, sensorVisibility } from '../interfaces/sensor';
+import { take } from 'rxjs';
 
 @Component({
   selector: 'app-sensor-add',
@@ -14,10 +15,10 @@ export class SensorAddComponent {
   // Define the sensor object using the interface, without 'id' and 'files' initially.
   sensor: Omit<sensor, 'id'> = {
     name: '',
-    color: 'Green', // Default color
-    category: 'Temperature', // Default category
+    color: sensorColor.Green, // Default color
+    category: sensorCategory.Temperature, // Default category
     description: '',
-    visibility: 'private' // Default visibility
+    visibility: sensorVisibility.Public // Default visibility
   };
 
   constructor(private sensorService: SensorService) {}
@@ -29,7 +30,9 @@ export class SensorAddComponent {
     }
 
     // Call the addSensor method from the service
-    this.sensorService.addSensor(this.sensor).subscribe({
+    this.sensorService.addSensor(this.sensor)
+    .pipe(take(1)) // Automatically unsubscribes after the first emission
+    .subscribe({
       next: (addedSensor) => {
         console.log('Sensor added successfully:', addedSensor);
       },

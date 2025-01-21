@@ -2,7 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { RouterModule, ActivatedRoute} from '@angular/router';
 
 import { SensorService } from '../sensor.service';
-import { sensor } from '../sensor';
+import { sensor } from '../interfaces/sensor';
+import { take } from 'rxjs';
 
 @Component({
   selector: 'app-sensor-details',
@@ -26,7 +27,9 @@ export class SensorDetailsComponent implements OnInit{
 
   getSensorById(): void {
     const id = +this.route.snapshot.paramMap.get('id')!;
-    this.sensorService.getSensorById(id).subscribe({
+    this.sensorService.getSensorById(id)
+    .pipe(take(1))
+    .subscribe({
       next: (data) => {
         this.sensor = data;
       },
