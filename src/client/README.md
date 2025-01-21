@@ -48,7 +48,7 @@ To build the project for production:
 
 1. Run the build command:
    ```bash
-   ng build --prod
+   ng build
    ```
 
 2. The build artifacts will be stored in the `dist/` directory. You can host the contents of this directory on any web server.
