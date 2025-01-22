@@ -26,7 +26,7 @@ type SensorRepository interface {
 // SensorRepositoryImpl is the implementation of the SensorRepository interface.
 // It uses GORM as the database ORM to interact with the database.
 type SensorRepositoryImpl struct {
-	DB *gorm.DB // DB is the GORM instance used to interact with the database.
+	DB *gorm.DB
 }
 
 func NewSensorRepository() (SensorRepository, error) {

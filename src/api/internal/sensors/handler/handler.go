@@ -9,17 +9,30 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// SensorHandler defines the contract for handling sensor-related HTTP requests.
+type SensorHandler interface {
+	// GetSensors handles the retrieval of all sensors.
+	GetSensors(c *gin.Context)
+	// GetSensor handles the retrieval of a specific sensor by its ID.
+	GetSensor(c *gin.Context)
+	// AddSensor handles the creation of a new sensor.
+	AddSensor(c *gin.Context)
+	// UpdateSensor handles updating an existing sensor's details.
+	UpdateSensor(c *gin.Context)
+	// DeleteSensor handles deleting a sensor by its ID.
+	DeleteSensor(c *gin.Context)
+}
+
 // SensorHandler handles HTTP requests related to sensors.
-// It acts as a bridge between the HTTP layer and the business logic layer (service.go).
-type SensorHandler struct {
-	Service usecase.SensorService // Service provides business logic operations for sensors.
+type SensorHandlerImpl struct {
+	Service usecase.SensorService
 }
 
-func NewSensorHandler(service usecase.SensorService) *SensorHandler {
-	return &SensorHandler{Service: service}
+func NewSensorHandler(service usecase.SensorService) SensorHandler {
+	return &SensorHandlerImpl{Service: service}
 }
 
-func (h *SensorHandler) GetSensors(c *gin.Context) {
+func (h *SensorHandlerImpl) GetSensors(c *gin.Context) {
 	sensors, err := h.Service.GetAllSensors()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to retrieve sensors"})
@@ -28,8 +41,12 @@ func (h *SensorHandler) GetSensors(c *gin.Context) {
 	c.JSON(http.StatusOK, sensors)
 }
 
-func (h *SensorHandler) GetSensor(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Param("id"))
+func (h *SensorHandlerImpl) GetSensor(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
+		return
+	}
 	sensor, err := h.Service.GetSensorByID(uint(id))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Sensor not found"})
@@ -38,7 +55,7 @@ func (h *SensorHandler) GetSensor(c *gin.Context) {
 	c.JSON(http.StatusOK, sensor)
 }
 
-func (h *SensorHandler) AddSensor(c *gin.Context) {
+func (h *SensorHandlerImpl) AddSensor(c *gin.Context) {
 	var sensor domain.Sensor
 	if err := c.ShouldBindJSON(&sensor); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -54,12 +71,10 @@ func (h *SensorHandler) AddSensor(c *gin.Context) {
 	c.JSON(http.StatusCreated, sensor)
 }
 
-func (h *SensorHandler) UpdateSensor(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Param("id"))
-	var sensor domain.Sensor
-
-	if err := c.ShouldBindJSON(&sensor); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+func (h *SensorHandlerImpl) UpdateSensor(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
 		return
 	}
 
@@ -69,17 +84,24 @@ func (h *SensorHandler) UpdateSensor(c *gin.Context) {
 		return
 	}
 
-	// Update fields only if they are not empty in the request body
-	if sensor.Name != "" {
+	var sensor domain.Sensor
+	if err := c.ShouldBindJSON(&sensor); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if sensor.Name != existingSensor.Name {
 		existingSensor.Name = sensor.Name
 	}
-	if sensor.Category != "" {
+	if sensor.Category != existingSensor.Category {
 		existingSensor.Category = sensor.Category
 	}
-	if sensor.Description != "" {
+
+	if sensor.Description != existingSensor.Description {
 		existingSensor.Description = sensor.Description
 	}
-	if sensor.Visibility != "" {
+
+	if sensor.Visibility != existingSensor.Visibility {
 		existingSensor.Visibility = sensor.Visibility
 	}
 
@@ -92,11 +114,10 @@ func (h *SensorHandler) UpdateSensor(c *gin.Context) {
 	c.JSON(http.StatusOK, existingSensor)
 }
 
-func (h *SensorHandler) DeleteSensor(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Param("id"))
-	err := h.Service.DeleteSensor(uint(id))
+func (h *SensorHandlerImpl) DeleteSensor(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
 		return
 	}
 

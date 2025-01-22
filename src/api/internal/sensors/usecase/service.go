@@ -7,7 +7,6 @@ import (
 )
 
 // SensorService defines the business logic methods for managing sensors.
-// It provides operations to create, delete, retrieve, and update sensor data.
 type SensorService interface {
 	// CreateSensor creates a new sensor
 	CreateSensor(sensor *domain.Sensor) error
@@ -24,23 +23,30 @@ type SensorService interface {
 // SensorServiceImpl is the implementation of the SensorService interface.
 // It uses the SensorRepository for interacting with the underlying data storage.
 type SensorServiceImpl struct {
-	Repo repository.SensorRepository // Repo is the repository that handles database operations for sensors.
+	Repo repository.SensorRepository
 }
 
 func NewSensorService(repo repository.SensorRepository) SensorService {
 	return &SensorServiceImpl{Repo: repo}
 }
 
-func (s *SensorServiceImpl) CreateSensor(sensor *domain.Sensor) error {
-	if sensor.Name == "" && sensor.Category == "" {
+func getField(sensor *domain.Sensor) error {
+	if sensor.Name == "" || sensor.Category == "" {
 		return errors.New("name and category are required")
+	}
+	return nil
+}
+
+func (s *SensorServiceImpl) CreateSensor(sensor *domain.Sensor) error {
+	if err := getField(sensor); err != nil {
+		return err
 	}
 	return s.Repo.CreateSensor(sensor)
 }
 
 func (s *SensorServiceImpl) UpdateSensor(sensor *domain.Sensor) error {
-	if sensor.Name == "" && sensor.Category == "" {
-		return errors.New("name and category are required")
+	if err := getField(sensor); err != nil {
+		return err
 	}
 	return s.Repo.UpdateSensor(sensor)
 }
