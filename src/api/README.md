@@ -1,9 +1,5 @@
 # GO API
 
-## Installation
-
-Follow these steps to set up and run the Go API on your local machine.
-
 ### Prerequisites
 
 Make sure you have the following tools installed on your system:
@@ -12,14 +8,6 @@ Make sure you have the following tools installed on your system:
 - [Docker](https://www.docker.com/get-started) (optional, for running the database locally)
 - [Gorm](https://gorm.io/index.html) (ORM for Go, used for database interactions)
 
-### Clone the Repository
-
-```bash
-git clone https://github.com/yourusername/UNO-Onboarding.git
-git checkout task/IP-241-api-base-structure
-cd src/api
-
-```
 ---
 
 ### Set Up the Azure SQL Server and Database

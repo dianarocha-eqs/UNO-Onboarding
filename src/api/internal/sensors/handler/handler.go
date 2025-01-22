@@ -9,8 +9,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// SensorHandler handles HTTP requests related to sensors.
+// It acts as a bridge between the HTTP layer and the business logic layer (service.go).
 type SensorHandler struct {
-	Service usecase.SensorService
+	Service usecase.SensorService // Service provides business logic operations for sensors.
 }
 
 func NewSensorHandler(service usecase.SensorService) *SensorHandler {
@@ -70,9 +72,6 @@ func (h *SensorHandler) UpdateSensor(c *gin.Context) {
 	// Update fields only if they are not empty in the request body
 	if sensor.Name != "" {
 		existingSensor.Name = sensor.Name
-	}
-	if sensor.Color != "" {
-		existingSensor.Color = sensor.Color
 	}
 	if sensor.Category != "" {
 		existingSensor.Category = sensor.Category

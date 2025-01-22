@@ -54,3 +54,9 @@ pprof/
 
 # Go build cache
 /go-build/
+
+# Ignore the client directory
+/src/client/
+
+/src/package.json
+

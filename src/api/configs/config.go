@@ -10,18 +10,21 @@ import (
 	"gorm.io/gorm"
 )
 
+// DBConfig holds the database configuration details required for establishing a connection.
 type DBConfig struct {
-	Host     string `json:"host"`
-	Port     int    `json:"port"`
-	User     string `json:"user"`
-	Password string `json:"password"`
-	Name     string `json:"name"`
+	Host     string `json:"host"`     // Host is the address of the database server.
+	Port     int    `json:"port"`     // Port is the port number on which the database server is running.
+	User     string `json:"user"`     // User is the username used to authenticate with the database.
+	Password string `json:"password"` // Password is the user's password for database authentication.
+	Name     string `json:"name"`     // Name is the name of the database to connect to.
 }
 
+// Config represents the overall application configuration, including database settings.
 type Config struct {
-	DB DBConfig `json:"db"`
+	DB DBConfig `json:"db"` // DB contains the database configuration.
 }
 
+// ConfigFilePath is the relative path to the configuration JSON file.
 const ConfigFilePath = "../configs/config.json"
 
 // LoadConfig reads the config file and unmarshals it into a Config object

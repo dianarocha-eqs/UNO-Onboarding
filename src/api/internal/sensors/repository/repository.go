@@ -8,16 +8,25 @@ import (
 	"gorm.io/gorm"
 )
 
+// SensorRepository defines the methods required to interact with the sensor data storage.
+// It provides basic CRUD operations for managing sensors.
 type SensorRepository interface {
+	// CreateSensor adds a new sensor to the database.
 	CreateSensor(sensor *domain.Sensor) error
+	// DeleteSensor removes a sensor from the database by its ID.
 	DeleteSensor(id uint) error
+	// GetAllSensors retrieves all sensors from the database.
 	GetAllSensors() ([]domain.Sensor, error)
+	// GetSensorByID retrieves a sensor by its ID from the database.
 	GetSensorByID(id uint) (domain.Sensor, error)
+	// UpdateSensor updates the details of an existing sensor in the database.
 	UpdateSensor(sensor *domain.Sensor) error
 }
 
+// SensorRepositoryImpl is the implementation of the SensorRepository interface.
+// It uses GORM as the database ORM to interact with the database.
 type SensorRepositoryImpl struct {
-	DB *gorm.DB
+	DB *gorm.DB // DB is the GORM instance used to interact with the database.
 }
 
 func NewSensorRepository() (SensorRepository, error) {
