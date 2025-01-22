@@ -3,7 +3,7 @@ export const routes: Routes = [
   {
     path: '',
     pathMatch: 'full',
-    redirectTo: 'auth', // Default route to authentication
+    redirectTo: 'home', // Default route to authentication
   },
   {
     path: 'auth',
@@ -27,7 +27,7 @@ export const routes: Routes = [
   },
   {
     path: '**',
-    redirectTo: 'login',
+    redirectTo: 'home',
   },
 ];
     

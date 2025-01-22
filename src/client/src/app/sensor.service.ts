@@ -45,11 +45,6 @@ export class SensorService {
     );
   }
 
-  // deleteSensor(id: number): Observable<sensor> {
-  //   return this.http.delete<sensor>(`${this.baseurl}/${id}`).pipe(
-  //     catchError(this.handleError<sensor>('deleteSensor', {} as sensor))
-  //   );
-  // }
 
   // PUT
   updateSensor(id: number, sensor: sensor): Observable<sensor> {
@@ -63,7 +58,7 @@ export class SensorService {
       console.error(`${operation} failed: ${error.message}`);
       // Show an alert or log to see what's happening
       alert(`Error: ${operation} failed: ${error.message}`);  // This will pop up an alert if the API fails
-      return of(result as T);  // Fallback result (empty array in case of error)
+      return of(result as T); 
     };
   }
   private getHttpOptions() {
