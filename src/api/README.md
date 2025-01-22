@@ -10,33 +10,7 @@ Make sure you have the following tools installed on your system:
 
 ---
 
-### Set Up the Azure SQL Server and Database
-
-Run the following commands to set up the Azure SQL Server, configure firewall rules, and create the database:
-
-1. **Create the Azure SQL Server**:
-   ```bash
-   az sql server create --name uno-onboarding --resource-group UNOnboarding --location northeurope --admin-user eqs-digital --admin-password B3N5GA!QpgCX^&@Bt+pXhTY6NcZD7NWw
-   ```
-
-2. **Add a Firewall Rule to Allow Your IP Address**:
-   Replace `192.168.1.233` with your actual public IP address:
-   ```bash
-   az sql server firewall-rule create --resource-group UNOnboarding --server uno-onboarding --name AllowMyIP --start-ip-address 192.168.1.233 --end-ip-address 192.168.1.233
-   ```
-
-3. **Create the Azure SQL Database**:
-   ```bash
-   az sql db create \
-     --resource-group UNOnboarding \
-     --server uno-onboarding \
-     --name uno-onboarding \
-     --service-objective S1
-   ```
----
-
 ## Setup, Build & Run
-
 
 ### 1. **Install Go dependencies**:
    
