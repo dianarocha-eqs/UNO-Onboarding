@@ -17,11 +17,11 @@ export enum sensorVisibility {
 }
   
 export interface sensor {
-id: number;
-name: string;
-color: sensorColor;
-category: sensorCategory;
-description: string;
-visibility: sensorVisibility;
+  id: number;
+  name: string;
+  color: sensorColor;
+  category: sensorCategory;
+  description: string;
+  visibility: sensorVisibility;
 }
   
