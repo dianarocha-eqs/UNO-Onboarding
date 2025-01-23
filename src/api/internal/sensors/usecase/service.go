@@ -30,7 +30,7 @@ func NewSensorService(repo repository.SensorRepository) SensorService {
 	return &SensorServiceImpl{Repo: repo}
 }
 
-// validateRequiredFields checks if the required fields (name and category) of the Sensor are provided/not empty (mandatory).
+// Checks the required fields of the Sensor.
 func validateRquiredFields(sensor *domain.Sensor) error {
 	if sensor.Name == "" || sensor.Category == "" {
 		return errors.New("name and category are required")
