@@ -30,7 +30,8 @@ func NewSensorService(repo repository.SensorRepository) SensorService {
 	return &SensorServiceImpl{Repo: repo}
 }
 
-func getField(sensor *domain.Sensor) error {
+// validateSensorFields checks if the required fields (name and category) of the Sensor are provided/not empty (mandatory).
+func validateSensorFields(sensor *domain.Sensor) error {
 	if sensor.Name == "" || sensor.Category == "" {
 		return errors.New("name and category are required")
 	}
@@ -38,14 +39,14 @@ func getField(sensor *domain.Sensor) error {
 }
 
 func (s *SensorServiceImpl) CreateSensor(sensor *domain.Sensor) error {
-	if err := getField(sensor); err != nil {
+	if err := validateSensorFields(sensor); err != nil {
 		return err
 	}
 	return s.Repo.CreateSensor(sensor)
 }
 
 func (s *SensorServiceImpl) UpdateSensor(sensor *domain.Sensor) error {
-	if err := getField(sensor); err != nil {
+	if err := validateSensorFields(sensor); err != nil {
 		return err
 	}
 	return s.Repo.UpdateSensor(sensor)
