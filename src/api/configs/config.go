@@ -12,16 +12,21 @@ import (
 
 // DBConfig holds the database configuration details required for establishing a connection.
 type DBConfig struct {
-	Host     string `json:"host"`     // Host is the address of the database server.
-	Port     int    `json:"port"`     // Port is the port number on which the database server is running.
-	User     string `json:"user"`     // User is the username used to authenticate with the database.
-	Password string `json:"password"` // Password is the user's password for database authentication.
-	Name     string `json:"name"`     // Name is the name of the database to connect to.
+	// Host is the address of the database server.
+	Host string `json:"host"`
+	// Port is the port number on which the database server is running.
+	Port int `json:"port"`
+	// User is the username used to authenticate with the database.
+	User string `json:"user"`
+	// Password is the user's password for database authentication.
+	Password string `json:"password"`
+	// Name is the name of the database to connect to.
+	Name string `json:"name"`
 }
 
 // Config represents the overall application configuration, including database settings.
 type Config struct {
-	DB DBConfig `json:"db"` // DB contains the database configuration.
+	DB DBConfig `json:"db"`
 }
 
 // ConfigFilePath is the relative path to the configuration JSON file.
