@@ -28,6 +28,5 @@ Connection Timeout=30;
 
 ### **Security Note**
 - The firewall currently allows access from all IP addresses. Ensure you connect securely and avoid sharing credentials publicly.
-- If further security restrictions are required, contact the database administrator.
 
 
