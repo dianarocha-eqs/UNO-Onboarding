@@ -1,0 +1,14 @@
+{
+  "database": {
+    "server": "uno-onboarding.database.windows.net",
+    "port": 1433,
+    "database_name": "uno-onboarding",
+    "user_id": "eqs-digital",
+    "password": "B3N5GA!QpgCX^&@Bt+pXhTY6NcZD7NWw",
+    "encrypt": true,
+    "trust_server_certificate": false,
+    "connection_timeout": 30,
+    "multiple_active_result_sets": false,
+    "persist_security_info": false
+  }
+}
