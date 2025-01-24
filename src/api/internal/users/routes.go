@@ -33,8 +33,7 @@ func RegisterUsersRoutes(router *gin.Engine) {
 	{
 		// Create User (if admin)
 		api.POST("createUser", h.AddUser)
-		api.GET("getAll", h.GetUsers)
+		// api.GET("getAll", h.GetUsers)
 
 	}
-
 }

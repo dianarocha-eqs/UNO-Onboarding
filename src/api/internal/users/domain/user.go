@@ -1,57 +1,35 @@
 package domain
 
 import (
-	"encoding/json"
+	"time"
 )
 
-// Sensor represents a device that collects and transmits data about its environment.
 type User struct {
-	// ID of the users
-	ID uint `json:"id"`
-	// UUID of the user
-	UserID string `gorm:"column:userid" json:"user_id"`
-	// Name of the user
-	Name string `json:"name"`
-	// Email of the user
-	Email string `json:"email"`
-	// Password of the user
-	Password string `json:"password"`
-	// Phone number of the user
-	Phone string `json:"phoney"`
-	// Role of the user
-	Role bool `json:"role"`
-	// Picture path of the user
-	Picture string `json:"picture"`
+	ID        string    `json:"uuid" gorm:"type:uniqueidentifier;primaryKey;default:NEWID()"`
+	Name      string    `json:"name" gorm:"type:nvarchar(255);not null"`
+	Email     string    `json:"email" gorm:"type:nvarchar(255);unique;not null"`
+	Password  string    `json:"password" gorm:"type:nvarchar(64);not null"`
+	Picture   string    `json:"picture" gorm:"type:nvarchar(max)"`
+	Phone     string    `json:"phone" gorm:"type:nvarchar(20)"`
+	Role      bool      `json:"role" gorm:"type:bit;not null;default:0"`
+	CreatedAt time.Time `json:"created_at" gorm:"type:datetime;autoCreateTime"`
+	UpdatedAt time.Time `json:"updated_at" gorm:"type:datetime;autoUpdateTime"`
 }
 
-// // Base contains common columns for all tables.
-// type Base struct {
-// 	ID        string     `gorm:"type:uuid;primary_key;"`
-// 	CreatedAt time.Time  `json:"created_at"`
-// 	UpdatedAt time.Time  `json:"updated_at"`
-// 	DeletedAt *time.Time `sql:"index" json:"deleted_at"`
+// func (u *User) MarshalJSON() ([]byte, error) {
+// 	type Alias User
+// 	return json.Marshal(&struct {
+// 		Role string `json:"role"`
+// 		*Alias
+// 	}{
+// 		Role:  boolToString(u.Role),
+// 		Alias: (*Alias)(u),
+// 	})
 // }
 
-// // BeforeCreate will set a UUID rather than numeric ID.
-// func (b *Base) BeforeCreate(tx *gorm.DB) (err error) {
-// 	b.ID = uuid.New().String()
-// 	return
+// func boolToString(b bool) string {
+// 	if b {
+// 		return "admin"
+// 	}
+// 	return "user"
 // }
-
-func (u *User) MarshalJSON() ([]byte, error) {
-	type Alias User
-	return json.Marshal(&struct {
-		Role string `json:"role"`
-		*Alias
-	}{
-		Role:  boolToString(u.Role),
-		Alias: (*Alias)(u),
-	})
-}
-
-func boolToString(b bool) string {
-	if b {
-		return "admin"
-	}
-	return "user"
-}
