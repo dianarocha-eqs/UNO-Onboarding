@@ -9,16 +9,18 @@ import (
 	"gorm.io/gorm"
 )
 
+// Interface for user's data operations
 type UserRepository interface {
-	FindUserByRole(ctx context.Context, role bool) (*domain.User, error)
+	// Stores a new user in the database
 	CreateUser(ctx context.Context, user *domain.User) error
-	// GetAllUsers(ctx context.Context) ([]domain.User, error)
 }
 
+// Performs user's data operations using GORM to interact with the database
 type UserRepositoryImpl struct {
 	DB *gorm.DB
 }
 
+// Connects with the database
 func NewUserRepository() (UserRepository, error) {
 	db, err := config.ConnectDB()
 	if err != nil {
@@ -27,20 +29,6 @@ func NewUserRepository() (UserRepository, error) {
 	return &UserRepositoryImpl{DB: db}, nil
 }
 
-func (r *UserRepositoryImpl) FindUserByRole(ctx context.Context, role bool) (*domain.User, error) {
-	var user domain.User
-	result := r.DB.WithContext(ctx).Where("role = ?", role).First(&user)
-	if result.Error != nil {
-		return nil, result.Error
-	}
-	return &user, nil
-}
 func (r *UserRepositoryImpl) CreateUser(ctx context.Context, user *domain.User) error {
 	return r.DB.WithContext(ctx).Create(user).Error
 }
-
-// func (r *UserRepositoryImpl) GetAllUsers() ([]domain.User, error) {
-// 	var users []domain.User
-// 	err := r.DB.Find(&users).Error
-// 	return users, err
-// }

@@ -7,13 +7,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
+	"github.com/google/uuid"
 )
 
+// Interface for user's services
 type UserService interface {
+	// Creates a new user and returns the user's UUID
 	CreateUser(ctx context.Context, user *domain.User) (string, error)
-	// GetAllUsers() ([]domain.User, error)
 }
 
+// Handles user's logic and interaction with the repository
 type UserServiceImpl struct {
 	Repo repository.UserRepository
 }
@@ -22,53 +26,42 @@ func NewUserService(repo repository.UserRepository) UserService {
 	return &UserServiceImpl{Repo: repo}
 }
 
-// Checks the required fields of the User.
+// Checks the required fields of the user
 func validateRquiredFields(user *domain.User) error {
 	if user.Email == "" || user.Name == "" || user.Phone == "" {
-		return errors.New("name, email, and password are required fields")
+		return errors.New("name, email, and phone are required fields")
 	}
 	return nil
 }
 
-// func (s *UserServiceImpl) ValidateAdmin(ctx context.Context) error {
-// 	admin, err := s.Repo.FindUserByRole(ctx, true) // Find admin
-// 	if err != nil || admin == nil {
-// 		return errors.New("403: only admins can perform this action")
-// 	}
-// 	return nil
-// }
-
 func (s *UserServiceImpl) CreateUser(ctx context.Context, user *domain.User) (string, error) {
-	// Validate admin privileges
-	// err := s.ValidateAdmin(ctx)
-	// if err != nil {
-	// 	return "", err
-	// }
 
 	if err := validateRquiredFields(user); err != nil {
 		return "", err
 	}
+	// Generate UUID
+	user.ID = uuid.New().String() // Generate UUID as string
+
 	// Generate random password and hash
 	plainPassword, hashedPassword, err := util.GenerateRandomPasswordHash()
 	if err != nil {
 		return "", err
 	}
-
-	// Assign the hashed password to the user model
+	// Assign the hashed password to the user
 	user.Password = hashedPassword
 
-	// Save the user
 	err = s.Repo.CreateUser(ctx, user)
 	if err != nil {
 		return "", err
 	}
-	// Send plain password via email (future implementation)
-	// For now, log the plain password (temporary)
-	fmt.Printf("User created successfully. Password: %s\n", plainPassword)
 
+	// Send the plain password to the user's email
+	emailSubject := "Welcome to UNO Service"
+	emailBody := fmt.Sprintf("Hello %s,\n\nYour account has been created. Your temporary password is: %s\n\nPlease change it after logging in.", user.Name, plainPassword)
+
+	err = util.SendEmail(user.Email, emailSubject, emailBody)
+	if err != nil {
+		return "", errors.New("user created but failed to send email")
+	}
 	return user.ID, nil
 }
-
-// func (s *UserServiceImpl) GetAllUsers() ([]domain.User, error) {
-// 	return s.Repo.GetAllUsers()
-// }

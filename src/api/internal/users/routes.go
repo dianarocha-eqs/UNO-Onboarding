@@ -4,6 +4,8 @@ import (
 	"api/internal/users/handler"
 	"api/internal/users/repository"
 	"api/internal/users/usecase"
+
+	"api/util"
 	"log"
 
 	"github.com/gin-contrib/cors"
@@ -32,8 +34,9 @@ func RegisterUsersRoutes(router *gin.Engine) {
 	api := router.Group("/v1/users/")
 	{
 		// Create User (if admin)
-		api.POST("createUser", h.AddUser)
-		// api.GET("getAll", h.GetUsers)
+		api.POST("createUser", util.AdminOnly(), h.AddUser)
+		// To test without the admin flag
+		// api.POST("createUser", h.AddUser)
 
 	}
 }

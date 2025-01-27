@@ -9,7 +9,7 @@ import (
 
 const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()"
 
-// GenerateRandomPassword generates a random password of a given length.
+// Generates a random password of a given length.
 func GenerateRandomPassword(length int) (string, error) {
 	if length <= 0 {
 		return "", nil
@@ -27,9 +27,9 @@ func GenerateRandomPassword(length int) (string, error) {
 	return string(password), nil
 }
 
-// GenerateRandomPasswordHash generates a random password and its hashed version.
+// Generates the hashed version of the random password (in order to not save the plain text of the user's password, mantaining his security)
 func GenerateRandomPasswordHash() (string, string, error) {
-	plainPassword, err := GenerateRandomPassword(12) // Generate a 12-character password
+	plainPassword, err := GenerateRandomPassword(12) // 12-character password
 	if err != nil {
 		return "", "", err
 	}
