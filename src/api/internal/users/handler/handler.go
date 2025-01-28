@@ -3,7 +3,6 @@ package handler
 import (
 	"api/internal/users/domain"
 	"api/internal/users/usecase"
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -37,11 +36,6 @@ func (h *UserHandlerImpl) AddUser(c *gin.Context) {
 		return
 	}
 
-	// Set the default role if not provided
-	if user.Role == false {
-		user.Role = false
-	}
-
 	// Call the service to create the user
 	ID, err := h.Service.CreateUser(c.Request.Context(), &user)
 	if err != nil {
@@ -68,26 +62,14 @@ func (h *UserHandlerImpl) EditUser(c *gin.Context) {
 		return
 	}
 
-	// These fields are required and should not be empty
-	if user.Name == "" || user.Phone == "" || user.Email == "" {
-		fmt.Fprintln(c.Writer, "name, phone and email cannot be empty. Previous values remained.")
-	}
-
-	// Validate the password if it is provided in the body (it should not be empty if provided)
-	if user.Password != "" && user.Password == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "password cannot be empty"})
-		return
+	// These fields will never be empty
+	if user.Name == "" || user.Phone == "" || user.Email == "" || user.Password == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Name, phone, e-mail and password cannot be empty.Previous values remained. "})
 	}
 
 	// Validate UUID format
 	if _, err := uuid.Parse(user.ID); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid UUID format"})
-		return
-	}
-
-	// Validate password (if provided)
-	if user.Password != "" && len(user.Password) == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Password cannot be empty"})
 		return
 	}
 
