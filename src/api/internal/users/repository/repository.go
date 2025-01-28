@@ -15,7 +15,6 @@ type UserRepository interface {
 	CreateUser(ctx context.Context, user *domain.User) error
 	// Updates the details of an existing user
 	UpdateUser(ctx context.Context, user *domain.User) error
-	GetUserByID(ctx context.Context, id string) (*domain.User, error)
 }
 
 // Performs user's data operations using GORM to interact with the database
@@ -37,17 +36,5 @@ func (r *UserRepositoryImpl) CreateUser(ctx context.Context, user *domain.User) 
 }
 
 func (r *UserRepositoryImpl) UpdateUser(ctx context.Context, user *domain.User) error {
-	return r.DB.WithContext(ctx).Save(user).Error
-}
-
-func (r *UserRepositoryImpl) GetUserByID(ctx context.Context, id string) (*domain.User, error) {
-	var user domain.User
-	err := r.DB.WithContext(ctx).First(&user, "id = ?", id).Error
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return nil, fmt.Errorf("user with id %s not found", id)
-		}
-		return nil, err
-	}
-	return &user, nil
+	return r.DB.WithContext(ctx).Model(&domain.User{}).Where("id = ?", user.ID).Updates(user).Error
 }

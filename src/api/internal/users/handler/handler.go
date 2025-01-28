@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 // Interface for handling HTTP requests related to users
@@ -27,7 +28,7 @@ func NewUserHandler(service usecase.UserService) UserHandler {
 
 func (h *UserHandlerImpl) AddUser(c *gin.Context) {
 
-	// Validate data received on the route
+	// Check data received on the JSON body
 	var user domain.User
 	if err := c.ShouldBindJSON(&user); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -52,44 +53,26 @@ func (h *UserHandlerImpl) AddUser(c *gin.Context) {
 }
 
 func (h *UserHandlerImpl) EditUser(c *gin.Context) {
-
 	var user domain.User
 
-	existingUser, err := h.Service.GetUserByID(c.Request.Context(), user.ID)
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"message": "User not found"})
-		return
-	}
-
-	// Validate data received on the route
+	// Check data received on the JSON body
 	if err := c.ShouldBindJSON(&user); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 
-	if user.Name != existingUser.Name {
-		existingUser.Name = user.Name
-	}
-	if user.Email != existingUser.Email {
-		existingUser.Email = user.Email
-	}
-	if user.Phone != existingUser.Phone {
-		existingUser.Phone = user.Phone
-	}
-	if user.Picture != existingUser.Picture {
-		existingUser.Picture = user.Picture
+	// Validate UUID format
+	if _, err := uuid.Parse(user.ID); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid UUID format"})
+		return
 	}
 
-	// Call the service to create the user
-	err = h.Service.UpdateUser(c.Request.Context(), &existingUser)
-	if err != nil {
-		// Check if it's a validation error (missing fields)
-		if strings.Contains(err.Error(), "name, email, and phone are required fields") {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		} else {
-			// Internal error (in case of duplicate emailm p.ex)
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update user", "error": err.Error()})
-		}
-		return c.JSON(http.StatusCreated, gin.H{"updateduser": user.ID})
+	// Proceed with the user update
+	if err := h.Service.UpdateUser(c.Request.Context(), &user); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update user", "error": err.Error()})
+		return
 	}
+
+	// Respond with the updated user information
+	c.JSON(http.StatusOK, gin.H{"message": "User updated successfully"})
 }
