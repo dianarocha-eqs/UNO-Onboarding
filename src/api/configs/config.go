@@ -10,21 +10,32 @@ import (
 	"gorm.io/gorm"
 )
 
-// Holds the database configuration details required for establishing a connection.
+// Holds the database and email configuration details.
 type Config struct {
+	// DB holds the database configuration details
 	DB struct {
-		Host     string `json:"host"`
-		Port     int    `json:"port"`
-		User     string `json:"user"`
+		// Host is the database server address
+		Host string `json:"host"`
+		// Port is the port number where the database is accessible
+		Port int `json:"port"`
+		// User is the username for authenticating with the database
+		User string `json:"user"`
+		// Password is the password for authenticating with the database
 		Password string `json:"password"`
-		Name     string `json:"name"`
+		// Name is the name of the database to connect to
+		Name string `json:"name"`
 	} `json:"db"`
 
+	// Email holds the configuration for sending emails
 	Email struct {
-		From     string `json:"from"`
+		// From is the email address that will appear as the sender
+		From string `json:"from"`
+		// Password is the password for the email account used for sending emails
 		Password string `json:"password"`
-		Host     string `json:"host"`
-		Port     int    `json:"port"`
+		// Host is the email server address (SMTP server)
+		Host string `json:"host"`
+		// Port is the port number for connecting to the email server
+		Port int `json:"port"`
 	} `json:"email"`
 }
 
