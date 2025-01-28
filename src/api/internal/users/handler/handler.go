@@ -14,6 +14,7 @@ import (
 type UserHandler interface {
 	// Handles the HTTP request to create a new user
 	AddUser(c *gin.Context)
+	// Handles the HTTP request to edit the info from a user
 	EditUser(c *gin.Context)
 }
 

@@ -68,7 +68,6 @@ func (s *UserServiceImpl) CreateUser(ctx context.Context, user *domain.User) (st
 	return user.ID, nil
 }
 
-// Updates an existing user
 func (s *UserServiceImpl) UpdateUser(ctx context.Context, user *domain.User) error {
 	if user.ID == "" {
 		return errors.New("user ID is required")
