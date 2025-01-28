@@ -11,19 +11,13 @@ import (
 
 // RegisterSensorRoutes declares the routes that can be accessed for sensor management.
 func RegisterSensorRoutes(router *gin.Engine) {
-	var repos repository.SensorRepository
-	var service usecase.SensorService
-	var h handler.SensorHandler
-	var err error
 
-	repos, err = repository.NewSensorRepository()
-
+	repos, err := repository.NewSensorRepository()
 	if err != nil {
 		log.Fatalf("Failed to create repository: %v", err)
 	}
-	service = usecase.NewSensorService(repos)
-
-	h = handler.NewSensorHandler(service)
+	service := usecase.NewSensorService(repos)
+	h := handler.NewSensorHandler(service)
 
 	// Sensor routes
 	api := router.Group("/api/")

@@ -1,4 +1,4 @@
-package config
+package configs
 
 import (
 	"encoding/json"
@@ -10,23 +10,22 @@ import (
 	"gorm.io/gorm"
 )
 
-// DBConfig holds the database configuration details required for establishing a connection.
-type DBConfig struct {
-	// Host is the address of the database server.
-	Host string `json:"host"`
-	// Port is the port number on which the database server is running.
-	Port int `json:"port"`
-	// User is the username used to authenticate with the database.
-	User string `json:"user"`
-	// Password is the user's password for database authentication.
-	Password string `json:"password"`
-	// Name is the name of the database to connect to.
-	Name string `json:"name"`
-}
-
-// Config represents the overall application configuration, including database settings.
+// Holds the database configuration details required for establishing a connection.
 type Config struct {
-	DB DBConfig `json:"db"`
+	DB struct {
+		Host     string `json:"host"`
+		Port     int    `json:"port"`
+		User     string `json:"user"`
+		Password string `json:"password"`
+		Name     string `json:"name"`
+	} `json:"db"`
+
+	Email struct {
+		From     string `json:"from"`
+		Password string `json:"password"`
+		Host     string `json:"host"`
+		Port     int    `json:"port"`
+	} `json:"email"`
 }
 
 // ConfigFilePath is the relative path to the configuration JSON file.
@@ -36,16 +35,16 @@ const ConfigFilePath = "../configs/config.json"
 func LoadConfig() (Config, error) {
 	var config Config
 
-	// Read the file
+	// Read the configuration file
 	data, err := os.ReadFile(ConfigFilePath)
 	if err != nil {
-		return config, fmt.Errorf("could not read config file: %v", err)
+		return config, fmt.Errorf("could not read config file at %s: %v", ConfigFilePath, err)
 	}
 
 	// Parse the JSON
 	err = json.Unmarshal(data, &config)
 	if err != nil {
-		return config, fmt.Errorf("could not parse config file: %v", err)
+		return config, fmt.Errorf("could not parse config JSON: %v", err)
 	}
 
 	return config, nil
@@ -71,7 +70,16 @@ func ConnectDB() (*gorm.DB, error) {
 		DisableForeignKeyConstraintWhenMigrating: true,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to database: %v", err)
+		return nil, fmt.Errorf("failed to connect to the database: %v", err)
+	}
+
+	// Test the database connection
+	sqlDB, err := db.DB()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database instance: %v", err)
+	}
+	if err = sqlDB.Ping(); err != nil {
+		return nil, fmt.Errorf("database connection test failed: %v", err)
 	}
 
 	return db, nil

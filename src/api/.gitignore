@@ -60,3 +60,4 @@ pprof/
 
 /src/package.json
 
+.go.sum
