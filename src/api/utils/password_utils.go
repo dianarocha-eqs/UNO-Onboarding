@@ -1,9 +1,10 @@
-package util
+package utils
 
 import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"math/big"
 )
 
@@ -11,7 +12,14 @@ const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!
 
 // Generates a random password of a given length.
 func GenerateRandomPassword(length int) (string, error) {
-	if length <= 0 {
+	// If length is negative, return an error
+	if length < 0 {
+		return "", fmt.Errorf("password length cannot be negative")
+	}
+
+	// If length is zero, return an empty string and a warning message
+	if length == 0 {
+		fmt.Println("Warning: password length is 0, returning an empty string")
 		return "", nil
 	}
 

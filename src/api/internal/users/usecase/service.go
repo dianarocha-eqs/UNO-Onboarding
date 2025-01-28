@@ -3,7 +3,7 @@ package usecase
 import (
 	"api/internal/users/domain"
 	"api/internal/users/repository"
-	"api/util"
+	"api/utils"
 	"context"
 	"errors"
 	"fmt"
@@ -43,7 +43,7 @@ func (s *UserServiceImpl) CreateUser(ctx context.Context, user *domain.User) (st
 	user.ID = uuid.New().String() // Generate UUID as string
 
 	// Generate random password and hash
-	plainPassword, hashedPassword, err := util.GenerateRandomPasswordHash()
+	plainPassword, hashedPassword, err := utils.GenerateRandomPasswordHash()
 	if err != nil {
 		return "", err
 	}
@@ -59,7 +59,7 @@ func (s *UserServiceImpl) CreateUser(ctx context.Context, user *domain.User) (st
 	emailSubject := "Welcome to UNO Service"
 	emailBody := fmt.Sprintf("Hello %s,\n\nYour account has been created. Your temporary password is: %s\n\nPlease change it after logging in.", user.Name, plainPassword)
 
-	err = util.SendEmail(user.Email, emailSubject, emailBody)
+	err = utils.SendEmail(user.Email, emailSubject, emailBody)
 	if err != nil {
 		return "", errors.New("user created but failed to send email")
 	}
