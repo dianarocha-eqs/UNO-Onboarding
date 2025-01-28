@@ -9,12 +9,17 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 // Interface for user's services
 type UserService interface {
 	// Creates a new user and returns the user's UUID
 	CreateUser(ctx context.Context, user *domain.User) (string, error)
+	// Updates an existing user
+	UpdateUser(ctx context.Context, user *domain.User) error
+	// Retrieves a user by their ID
+	GetUserByID(ctx context.Context, id string) (*domain.User, error)
 }
 
 // Handles user's logic and interaction with the repository
@@ -64,4 +69,31 @@ func (s *UserServiceImpl) CreateUser(ctx context.Context, user *domain.User) (st
 		return "", errors.New("user created but failed to send email")
 	}
 	return user.ID, nil
+}
+
+// Updates an existing user
+func (s *UserServiceImpl) UpdateUser(ctx context.Context, user *domain.User) error {
+	// Validate required fields
+	if err := validateRquiredFields(user); err != nil {
+		return err
+	}
+
+	// Attempt to update user in the database
+	if err := s.Repo.UpdateUser(ctx, user); err != nil {
+		return fmt.Errorf("failed to update user with id %s: %v", user.ID, err)
+	}
+
+	return nil
+}
+
+// Retrieves a user by their ID
+func (s *UserServiceImpl) GetUserByID(ctx context.Context, id string) (*domain.User, error) {
+	user, err := s.Repo.GetUserByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("user with id %s not found", id)
+		}
+		return nil, fmt.Errorf("error retrieving user with id %s: %v", id, err)
+	}
+	return user, nil
 }
