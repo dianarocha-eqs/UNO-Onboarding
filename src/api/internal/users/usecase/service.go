@@ -29,7 +29,7 @@ func NewUserService(repo repository.UserRepository) UserService {
 }
 
 // Checks the required fields of the user
-func validateRquiredFields(user *domain.User) error {
+func validateRequiredFields(user *domain.User) error {
 	if user.Email == "" || user.Name == "" || user.Phone == "" {
 		return errors.New("name, email, and phone are required fields")
 	}
@@ -38,7 +38,7 @@ func validateRquiredFields(user *domain.User) error {
 
 func (s *UserServiceImpl) CreateUser(ctx context.Context, user *domain.User) (string, error) {
 
-	if err := validateRquiredFields(user); err != nil {
+	if err := validateRequiredFields(user); err != nil {
 		return "", err
 	}
 	// Generate UUID
