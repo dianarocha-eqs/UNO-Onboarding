@@ -62,20 +62,10 @@ func (h *UserHandlerImpl) EditUser(c *gin.Context) {
 		return
 	}
 
-	// These fields will never be empty
-	if user.Name == "" || user.Phone == "" || user.Email == "" || user.Password == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Name, phone, e-mail and password cannot be empty.Previous values remained. "})
-	}
-
 	// Validate UUID format
 	if _, err := uuid.Parse(user.ID); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid UUID format"})
 		return
-	}
-
-	// If picture is empty in the body, set it to an empty string
-	if user.Picture == "" {
-		user.Picture = ""
 	}
 
 	// Proceed with the user update
