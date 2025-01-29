@@ -58,22 +58,31 @@ func (h *UserHandlerImpl) EditUser(c *gin.Context) {
 
 	// Bind the JSON body to the user struct
 	if err := c.ShouldBindJSON(&user); err != nil {
+		// Return 400 Bad Request if the body is invalid
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 
 	// Validate UUID format
 	if _, err := uuid.Parse(user.ID); err != nil {
+		// Return 400 Bad Request if the UUID is invalid
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid UUID format"})
 		return
 	}
 
-	// Proceed with the user update
+	// User update
 	if err := h.Service.UpdateUser(c.Request.Context(), &user); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update user", "error": err.Error()})
+		// Return 500 Internal Server Error if update fails
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Failed to update user",
+			"error":   err.Error(),
+		})
 		return
 	}
 
-	// Respond with the updated user information
-	c.JSON(http.StatusOK, gin.H{"message": "User updated successfully"})
+	// Respond with the updated user information and the UUID, return 200 OK on success
+	c.JSON(http.StatusOK, gin.H{
+		"message": "User updated successfully",
+		"user":    user,
+	})
 }
