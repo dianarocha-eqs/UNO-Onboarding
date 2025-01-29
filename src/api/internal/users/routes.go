@@ -28,7 +28,7 @@ func RegisterUsersRoutes(router *gin.Engine) {
 	{
 		// Create User (if admin)
 		api.POST("create", utils.AdminOnly(), h.AddUser)
-		// To test without the admin flag
-
+		// Edit User (if admin or user themself)
+		api.POST("edit", utils.AdminAndUserItself(), h.EditUser)
 	}
 }

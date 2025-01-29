@@ -76,3 +76,6 @@ Here are the available endpoints for interacting with the user data in users/rou
 
 - `POST /v1/users/create`  
   Creates a new user (if admin).
+
+- `POST /v1/users/edit`  
+  Edit a user (if admin or user himself ).

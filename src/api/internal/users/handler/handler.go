@@ -7,12 +7,15 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 // Interface for handling HTTP requests related to users
 type UserHandler interface {
 	// Handles the HTTP request to create a new user
 	AddUser(c *gin.Context)
+	// Handles the HTTP request to edit the info from a user
+	EditUser(c *gin.Context)
 }
 
 // Process HTTP requests and interaction with the UserService for user operations
@@ -48,4 +51,29 @@ func (h *UserHandlerImpl) AddUser(c *gin.Context) {
 
 	// Respond with the created user's uuid
 	c.JSON(http.StatusCreated, gin.H{"userId": ID})
+}
+
+func (h *UserHandlerImpl) EditUser(c *gin.Context) {
+	var user domain.User
+
+	// Bind the JSON body to the user struct
+	if err := c.ShouldBindJSON(&user); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+
+	// Validate UUID format
+	if _, err := uuid.Parse(user.ID); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid UUID format"})
+		return
+	}
+
+	// Proceed with the user update
+	if err := h.Service.UpdateUser(c.Request.Context(), &user); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update user", "error": err.Error()})
+		return
+	}
+
+	// Respond with the updated user information
+	c.JSON(http.StatusOK, gin.H{"message": "User updated successfully"})
 }

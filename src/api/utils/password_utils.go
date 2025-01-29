@@ -36,12 +36,21 @@ func GenerateRandomPassword(length int) (string, error) {
 }
 
 // Generates the hashed version of the random password (in order to not save the plain text of the user's password, mantaining his security)
-func GenerateRandomPasswordHash() (string, string, error) {
-	plainPassword, err := GenerateRandomPassword(12) // 12-character password
-	if err != nil {
-		return "", "", err
+func GeneratePasswordHash(password string) (string, string, error) {
+	var plainPassword string
+
+	// If the user provided a password, use it, otherwise generate a random password
+	if password == "" {
+		var err error
+		plainPassword, err = GenerateRandomPassword(12) // 12-character password
+		if err != nil {
+			return "", "", err
+		}
+	} else {
+		plainPassword = password
 	}
 
+	// Hash the password
 	hasher := sha256.New()
 	hasher.Write([]byte(plainPassword))
 	hashedPassword := hex.EncodeToString(hasher.Sum(nil))
