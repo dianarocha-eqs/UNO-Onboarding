@@ -9,8 +9,8 @@ import (
 // Middleware that restricts access to certain routes if not an admin
 func AdminOnly() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		role, exists := c.Get("role")
-		if !exists || role != "admin" {
+		role := c.GetHeader("role")
+		if role != "true" {
 			c.JSON(http.StatusForbidden, gin.H{"error": "only admins can access this route"})
 			c.Abort()
 			return

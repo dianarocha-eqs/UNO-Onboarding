@@ -34,6 +34,7 @@ func validateRequiredFields(user *domain.User) error {
 	return nil
 }
 
+// Creates the password and send it on an e-mail
 func sendPasswordToEmail(user *domain.User) error {
 	// Generate random password and hash
 	plainPassword, hashedPassword, err := utils.GenerateRandomPasswordHash()
