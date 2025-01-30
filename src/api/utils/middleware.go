@@ -59,7 +59,7 @@ func AdminAndUserItself() gin.HandlerFunc {
 
 		// if userUUIDStr is empty
 		if len(userUUIDStr) == 0 {
-			// Generate a new UUID directly
+			// Returns a nil UUID
 			userUUID = uuid.FromStringOrNil(userUUIDStr)
 		} else {
 			// changes from string to uuid
