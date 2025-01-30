@@ -86,14 +86,14 @@ func sendPasswordToEmail(user *domain.User, password string) error {
 	user.Password = hashedPassword
 	fmt.Println(plainPassword)
 
-	// // Send the plain password to the user's email
-	// emailSubject := "Welcome to UNO Service"
-	// emailBody := fmt.Sprintf("Hello %s,\n\nYour account has been created. Your temporary password is: %s\n\nPlease change it after logging in.", user.Name, plainPassword)
+	// Send the plain password to the user's email
+	emailSubject := "Welcome to UNO Service"
+	emailBody := fmt.Sprintf("Hello %s,\n\nYour account has been created. Your temporary password is: %s\n\nPlease change it after logging in.", user.Name, plainPassword)
 
-	// err = utils.SendEmail(user.Email, emailSubject, emailBody)
-	// if err != nil {
-	// 	return errors.New("user created but failed to send email")
-	// }
+	err = utils.SendEmail(user.Email, emailSubject, emailBody)
+	if err != nil {
+		return errors.New("user created but failed to send email")
+	}
 	return nil
 }
 
@@ -162,7 +162,9 @@ func (s *UserServiceImpl) UpdateUser(ctx context.Context, user *domain.User) err
 
 func (s *UserServiceImpl) GetUsers(ctx context.Context, search string, sortDirection int) ([]domain.User, error) {
 
-	users, err := s.Repo.GetUsers(ctx)
+	var users []domain.User
+	var err error
+	users, err = s.Repo.GetUsers(ctx)
 	if err != nil {
 		return nil, errors.New("failed to retrieve users")
 	}
@@ -173,11 +175,18 @@ func (s *UserServiceImpl) GetUsers(ctx context.Context, search string, sortDirec
 		for _, user := range users {
 			if strings.Contains(user.Name, search) || strings.Contains(user.Email, search) {
 				filteredUsers = append(filteredUsers, user)
-			} else {
-				return nil, errors.New("nothing with that value")
 			}
 		}
+		// if there is no search on name and email that matches, then filteredUsers has nothing
+		if len(filteredUsers) == 0 {
+			return nil, errors.New("nothing with that value")
+		}
+
 		users = filteredUsers
+	}
+
+	if sortDirection != 1 && sortDirection != -1 && sortDirection != 0 {
+		return nil, errors.New("sort direction value is wrong")
 	}
 
 	// Sort by name

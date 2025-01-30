@@ -7,8 +7,6 @@ import (
 	"net/http"
 	"strings"
 
-	uuid "github.com/tentone/mssql-uuid"
-
 	"github.com/gin-gonic/gin"
 )
 
@@ -27,6 +25,11 @@ type UserResponse struct {
 	Name    string `json:"name"`
 	UUID    string `json:"uuid"`
 	Picture string `json:"picture"`
+}
+
+type FilterSearchAndSort struct {
+	Search string `json:"search"`
+	Sort   int    `json:"sort"`
 }
 
 // Process HTTP requests and interaction with the UserService for user operations
@@ -70,12 +73,6 @@ func (h *UserHandlerImpl) EditUser(c *gin.Context) {
 	}
 	fmt.Println(user)
 
-	// Validate UUID format
-	if _, err := uuid.FromString(user.ID.String()); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid UUID format"})
-		return
-	}
-
 	if err := h.Service.UpdateUser(c.Request.Context(), &user); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -87,15 +84,25 @@ func (h *UserHandlerImpl) EditUser(c *gin.Context) {
 }
 
 func (h *UserHandlerImpl) ListUsers(c *gin.Context) {
-	// Take the values from header to pass on service
-	search := c.MustGet("search").(string)
-	sortDirection := c.MustGet("sortDirection").(int)
+
+	var filter FilterSearchAndSort
 
 	var err error
-	var users []domain.User
-	users, err = h.Service.GetUsers(c.Request.Context(), search, sortDirection)
+
+	if err := c.ShouldBindJSON(&filter); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+
+	fmt.Printf("search value: %s", filter.Search)
+	fmt.Println(filter.Sort)
+	fmt.Println("----")
+
+	// Call the service to fetch users based on the search and sort parameters
+	users, err := h.Service.GetUsers(c.Request.Context(), filter.Search, filter.Sort)
 	if err != nil {
-		if err.Error() == "nothing with that value" {
+		// Check specific errors for handling them
+		if strings.Contains(err.Error(), "nothing with that value") || strings.Contains(err.Error(), "sort direction value is wrong") {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}
@@ -103,6 +110,7 @@ func (h *UserHandlerImpl) ListUsers(c *gin.Context) {
 		return
 	}
 
+	// Prepare the response
 	var response []UserResponse
 	for _, user := range users {
 		response = append(response, UserResponse{
@@ -111,5 +119,7 @@ func (h *UserHandlerImpl) ListUsers(c *gin.Context) {
 			Picture: user.Picture,
 		})
 	}
+
+	// Return the users in the expected format
 	c.JSON(http.StatusOK, response)
 }

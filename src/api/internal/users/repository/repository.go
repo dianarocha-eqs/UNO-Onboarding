@@ -17,9 +17,9 @@ type UserRepository interface {
 	CreateUser(ctx context.Context, user *domain.User) error
 	// Updates the details of an existing user
 	UpdateUser(ctx context.Context, user *domain.User) error
-	// Get the user's info
+	// Get the users info
 	GetUserByID(ctx context.Context, userID uuid.UUID) (*domain.User, error)
-	// List user details
+	// Get any users info
 	GetUsers(ctx context.Context) ([]domain.User, error)
 }
 
@@ -45,7 +45,6 @@ func (r *UserRepositoryImpl) UpdateUser(ctx context.Context, user *domain.User) 
 	return r.DB.WithContext(ctx).Model(&domain.User{}).Where("id = ?", user.ID).Updates(user).Error
 }
 
-// This was already created on this branch mainly for password change
 func (r *UserRepositoryImpl) GetUserByID(ctx context.Context, userID uuid.UUID) (*domain.User, error) {
 	var user domain.User
 	err := r.DB.WithContext(ctx).Where("id = ?", userID).First(&user).Error

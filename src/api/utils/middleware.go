@@ -4,6 +4,7 @@ import (
 	"api/internal/users/domain"
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -56,21 +57,36 @@ func AdminAndUserItself() gin.HandlerFunc {
 		}
 
 		var userUUID uuid.UUID
-		// convert string to uuid
-		userUUID, err = uuid.FromString(userUUIDStr)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid UUID format in header"})
-			c.Abort()
-			return
+
+		// if role has no value
+		if len(userUUIDStr) == 0 {
+			userUUID, err = uuid.FromString(userUUID.String())
+			fmt.Println(userUUID)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "invalid UUID format in header"})
+				c.Abort()
+				return
+			}
+		} else {
+			userUUID, err = uuid.FromString(userUUIDStr)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "invalid UUID format in header"})
+				c.Abort()
+				return
+			}
 		}
 
 		var role bool
-		// Convert string to boolean
-		role, err = strconv.ParseBool(roleStr)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid role format in header"})
-			c.Abort()
-			return
+
+		if roleStr == "" {
+			role = domain.ROLE_USER
+		} else {
+			role, err = strconv.ParseBool(roleStr)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "invalid UUID format in header"})
+				c.Abort()
+				return
+			}
 		}
 
 		// Allow access if the user is an admin or the UUID matches
@@ -80,46 +96,5 @@ func AdminAndUserItself() gin.HandlerFunc {
 			c.JSON(http.StatusForbidden, gin.H{"error": "access forbidden"})
 			c.Abort()
 		}
-	}
-}
-
-// Middleware that parses sortDirection and search, and checks if the user is admin
-func AdminAndSortMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var roleStr string
-		roleStr = c.GetHeader("role")
-
-		var role bool
-		var err error
-		role, err = strconv.ParseBool(roleStr)
-
-		if err != nil || role != domain.ROLE_ADMIN {
-			c.JSON(http.StatusForbidden, gin.H{"error": "only admins can access this route"})
-			c.Abort()
-			return
-		}
-
-		// Get optional query parameters (from headers)
-		search := c.GetHeader("search")
-		sortDirectionStr := c.GetHeader("sortDirection")
-
-		// Set default direction if nothing provided
-		// Gives an error if the provided int is wrong (# 1, -1 )
-		var sortDirection int
-		if sortDirectionStr != "" {
-			// Convert sortDirectionStr to int
-			sortDirection, err = strconv.Atoi(sortDirectionStr)
-			if err != nil || (sortDirection != 1 && sortDirection != -1) {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "invalid value for sorting direction"})
-				c.Abort()
-				return
-			}
-		} else {
-			sortDirection = 0 // Default to no sorting
-		}
-
-		c.Set("search", search)
-		c.Set("sortDirection", sortDirection)
-		c.Next()
 	}
 }

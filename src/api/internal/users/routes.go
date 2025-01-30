@@ -31,6 +31,6 @@ func RegisterUsersRoutes(router *gin.Engine) {
 		// Edit User (if admin or user themself)
 		api.POST("edit", utils.AdminAndUserItself(), h.EditUser)
 		// List Users
-		api.GET("list", utils.AdminAndSortMiddleware(), h.ListUsers)
+		api.POST("list", h.ListUsers)
 	}
 }
