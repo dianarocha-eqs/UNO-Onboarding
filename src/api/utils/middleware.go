@@ -57,15 +57,12 @@ func AdminAndUserItself() gin.HandlerFunc {
 
 		var userUUID uuid.UUID
 
-		// if role has no value
+		// if userUUIDStr is empty
 		if len(userUUIDStr) == 0 {
-			userUUID, err = uuid.FromString(userUUID.String())
-			if err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "invalid UUID format in header"})
-				c.Abort()
-				return
-			}
+			// Generate a new UUID directly
+			userUUID = uuid.NewV4()
 		} else {
+			// changes from string to uuid
 			userUUID, err = uuid.FromString(userUUIDStr)
 			if err != nil {
 				c.JSON(http.StatusBadRequest, gin.H{"error": "invalid UUID format in header"})
@@ -76,9 +73,11 @@ func AdminAndUserItself() gin.HandlerFunc {
 
 		var role bool
 
-		if roleStr == "" {
+		if len(roleStr) == 0 {
+			// which means it will not have access (unless it's the own user)
 			role = domain.ROLE_USER
 		} else {
+			// changes string value to bool
 			role, err = strconv.ParseBool(roleStr)
 			if err != nil {
 				c.JSON(http.StatusBadRequest, gin.H{"error": "invalid UUID format in header"})

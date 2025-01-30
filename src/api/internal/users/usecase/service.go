@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 	"regexp"
 	"sort"
 	"strings"
@@ -35,10 +36,8 @@ func NewUserService(repo repository.UserRepository) UserService {
 
 // Checks the required fields of the user
 func validateRequiredFields(user *domain.User) error {
-	// takes spaces
-	user.Name = strings.Join(strings.Fields(user.Name), " ")
-	user.Email = strings.Join(strings.Fields(user.Email), " ")
-	user.Phone = strings.Join(strings.Fields(user.Phone), " ")
+	// trim blank spaces for each field
+	TrimUserFields(user)
 
 	if user.Email == "" || user.Name == "" || user.Phone == "" {
 		return errors.New("name, email, and phone are required fields")
@@ -74,6 +73,25 @@ func validatePhone(phone string) error {
 	return nil
 }
 
+// Trims extra spaces from all string fields of a given user
+func TrimUserFields(user *domain.User) {
+	if user == nil {
+		return
+	}
+
+	v := reflect.ValueOf(user).Elem()
+
+	// Loop through all fields
+	for i := 0; i < v.NumField(); i++ {
+		field := v.Field(i)
+
+		// Check if the field is a string
+		if field.Kind() == reflect.String {
+			field.SetString(strings.Join(strings.Fields(field.String()), " "))
+		}
+	}
+}
+
 // Creates the password and sends it to the user via email
 func sendPasswordToEmail(user *domain.User, password string) error {
 	// Generate password hash (either random or user-provided)
@@ -107,7 +125,7 @@ func (s *UserServiceImpl) CreateUser(ctx context.Context, user *domain.User) (st
 
 	err := s.Repo.CreateUser(ctx, user)
 	if err != nil {
-		return "", err
+		return "", errors.New("failed to create user")
 	}
 	return user.ID.String(), nil // Convert UUID to string before returning
 }
@@ -123,10 +141,8 @@ func (s *UserServiceImpl) UpdateUser(ctx context.Context, user *domain.User) err
 		return fmt.Errorf("failed to retrieve current user: %v", err)
 	}
 
-	user.Name = strings.Join(strings.Fields(user.Name), " ")
-	user.Email = strings.Join(strings.Fields(user.Email), " ")
-	user.Phone = strings.Join(strings.Fields(user.Phone), " ")
-	user.Password = strings.Join(strings.Fields(user.Password), " ")
+	// trim blank spaces for each field
+	TrimUserFields(user)
 
 	// Preserve existing values if not provided
 	if user.Name == "" {
@@ -183,14 +199,14 @@ func (s *UserServiceImpl) GetUsers(ctx context.Context, search string, sortDirec
 		}
 		// if there is no search on name and email that matches, then filteredUsers has nothing
 		if len(filteredUsers) == 0 {
-			return nil, errors.New("nothing with that value")
+			return nil, errors.New("no matching user found: the search term does not appear in either name or email")
 		}
 
 		users = filteredUsers
 	}
 
 	if sortDirection != 1 && sortDirection != -1 && sortDirection != 0 {
-		return nil, errors.New("sort direction value is wrong")
+		return nil, errors.New("sort direction value is wrong ( different from 1, -1 or 0)")
 	}
 
 	// Sort by name

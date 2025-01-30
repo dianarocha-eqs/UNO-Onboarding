@@ -3,7 +3,6 @@ package handler
 import (
 	"api/internal/users/domain"
 	"api/internal/users/usecase"
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -71,7 +70,6 @@ func (h *UserHandlerImpl) EditUser(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
-	fmt.Println(user)
 
 	if err := h.Service.UpdateUser(c.Request.Context(), &user); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -86,19 +84,19 @@ func (h *UserHandlerImpl) EditUser(c *gin.Context) {
 func (h *UserHandlerImpl) ListUsers(c *gin.Context) {
 
 	var filter FilterSearchAndSort
-
 	var err error
 
-	if err := c.ShouldBindJSON(&filter); err != nil {
+	if err = c.ShouldBindJSON(&filter); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 
-	// Call the service to fetch users based on the search and sort parameters
-	users, err := h.Service.GetUsers(c.Request.Context(), filter.Search, filter.Sort)
+	var users []domain.User
+
+	users, err = h.Service.GetUsers(c.Request.Context(), filter.Search, filter.Sort)
 	if err != nil {
 		// Check specific errors for handling them
-		if strings.Contains(err.Error(), "nothing with that value") || strings.Contains(err.Error(), "sort direction value is wrong") {
+		if strings.Contains(err.Error(), "no matching user found") || strings.Contains(err.Error(), "sort direction value is wrong") {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}
