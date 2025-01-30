@@ -7,6 +7,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
+	"strings"
 
 	"github.com/google/uuid"
 )
@@ -30,8 +32,41 @@ func NewUserService(repo repository.UserRepository) UserService {
 
 // Checks the required fields of the user
 func validateRequiredFields(user *domain.User) error {
+	// takes spaces
+	user.Name = strings.Join(strings.Fields(user.Name), " ")
+	user.Email = strings.Join(strings.Fields(user.Email), " ")
+	user.Phone = strings.Join(strings.Fields(user.Phone), " ")
+
 	if user.Email == "" || user.Name == "" || user.Phone == "" {
 		return errors.New("name, email, and phone are required fields")
+	}
+
+	// Validate email
+	if err := validateEmail(user.Email); err != nil {
+		return err
+	}
+	// Validate phone number
+	if err := validatePhone(user.Phone); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Checks if the email is well constructed
+func validateEmail(email string) error {
+	var checkemail = regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
+	if !checkemail.MatchString(email) || len(email) < 5 {
+		return errors.New("invalid email format")
+	}
+	return nil
+}
+
+// Checks if the phone is well constructed
+func validatePhone(phone string) error {
+	var checknumber = regexp.MustCompile(`^\+?[1-9]\d{1,14}$`)
+	if !checknumber.MatchString(phone) {
+		return errors.New("invalid phone number format")
 	}
 	return nil
 }
@@ -43,21 +78,19 @@ func sendPasswordToEmail(user *domain.User, password string) error {
 	if err != nil {
 		return err
 	}
+	fmt.Println(plainPassword)
 	// Assign the hashed password to the user
 	user.Password = hashedPassword
 	fmt.Println(plainPassword)
 
-	// If the password is randomly generated, send it in the email
-	if password == "" {
-		// Send the plain password to the user's email
-		emailSubject := "Welcome to UNO Service"
-		emailBody := fmt.Sprintf("Hello %s,\n\nYour account has been created. Your temporary password is: %s\n\nPlease change it after logging in.", user.Name, plainPassword)
+	// // Send the plain password to the user's email
+	// emailSubject := "Welcome to UNO Service"
+	// emailBody := fmt.Sprintf("Hello %s,\n\nYour account has been created. Your temporary password is: %s\n\nPlease change it after logging in.", user.Name, plainPassword)
 
-		err = utils.SendEmail(user.Email, emailSubject, emailBody)
-		if err != nil {
-			return errors.New("user created but failed to send email")
-		}
-	}
+	// err = utils.SendEmail(user.Email, emailSubject, emailBody)
+	// if err != nil {
+	// 	return errors.New("user created but failed to send email")
+	// }
 	return nil
 }
 

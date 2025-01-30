@@ -29,60 +29,47 @@ func NewUserHandler(service usecase.UserService) UserHandler {
 
 func (h *UserHandlerImpl) AddUser(c *gin.Context) {
 
-	// Validate data received on the route
 	var user domain.User
 	if err := c.ShouldBindJSON(&user); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Call the service to create the user
 	ID, err := h.Service.CreateUser(c.Request.Context(), &user)
 	if err != nil {
 		// Check if it's a validation error (missing fields)
-		if strings.Contains(err.Error(), "name, email, and phone are required fields") {
+		if strings.Contains(err.Error(), "required fields") || strings.Contains(err.Error(), "invalid email format") || strings.Contains(err.Error(), "invalid phone number format") {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		} else {
-			// Internal error (in case of duplicate emailm p.ex)
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create user", "error": err.Error()})
+			// Internal error (in case of duplicate email p.ex)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
 		return
 	}
 
-	// Respond with the created user's uuid
 	c.JSON(http.StatusCreated, gin.H{"userId": ID})
 }
 
 func (h *UserHandlerImpl) EditUser(c *gin.Context) {
 	var user domain.User
 
-	// Bind the JSON body to the user struct
 	if err := c.ShouldBindJSON(&user); err != nil {
-		// Return 400 Bad Request if the body is invalid
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 
 	// Validate UUID format
 	if _, err := uuid.Parse(user.ID); err != nil {
-		// Return 400 Bad Request if the UUID is invalid
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid UUID format"})
 		return
 	}
 
-	// User update
 	if err := h.Service.UpdateUser(c.Request.Context(), &user); err != nil {
-		// Return 500 Internal Server Error if update fails
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": "Failed to update user",
-			"error":   err.Error(),
+			"error": err.Error(),
 		})
 		return
 	}
 
-	// Respond with the updated user information and the UUID, return 200 OK on success
-	c.JSON(http.StatusOK, gin.H{
-		"message": "User updated successfully",
-		"user":    user,
-	})
+	c.Status(http.StatusOK)
 }
