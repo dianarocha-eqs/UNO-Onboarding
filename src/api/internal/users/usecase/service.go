@@ -81,10 +81,8 @@ func sendPasswordToEmail(user *domain.User, password string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(plainPassword)
 	// Assign the hashed password to the user
 	user.Password = hashedPassword
-	fmt.Println(plainPassword)
 
 	// Send the plain password to the user's email
 	emailSubject := "Welcome to UNO Service"
@@ -118,12 +116,17 @@ func (s *UserServiceImpl) UpdateUser(ctx context.Context, user *domain.User) err
 	if user.ID == (uuid.UUID{}) {
 		return errors.New("user ID is required")
 	}
-	fmt.Println(user.ID)
+
 	// Get current user data from the database using UUID
 	currentUser, err := s.Repo.GetUserByID(ctx, user.ID)
 	if err != nil {
 		return fmt.Errorf("failed to retrieve current user: %v", err)
 	}
+
+	user.Name = strings.Join(strings.Fields(user.Name), " ")
+	user.Email = strings.Join(strings.Fields(user.Email), " ")
+	user.Phone = strings.Join(strings.Fields(user.Phone), " ")
+	user.Password = strings.Join(strings.Fields(user.Password), " ")
 
 	// Preserve existing values if not provided
 	if user.Name == "" {
@@ -169,6 +172,7 @@ func (s *UserServiceImpl) GetUsers(ctx context.Context, search string, sortDirec
 		return nil, errors.New("failed to retrieve users")
 	}
 
+	search = strings.Join(strings.Fields(search), " ")
 	// Filter by name or email
 	if search != "" {
 		var filteredUsers []domain.User

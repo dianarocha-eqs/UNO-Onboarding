@@ -81,4 +81,4 @@ Here are the available endpoints for interacting with the user data in users/rou
   Edit a user (if admin or user himself ).
 
 - `GET /v1/users/list`  
-List users.
+  List users.

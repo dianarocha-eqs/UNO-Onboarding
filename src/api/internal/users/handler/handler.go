@@ -94,10 +94,6 @@ func (h *UserHandlerImpl) ListUsers(c *gin.Context) {
 		return
 	}
 
-	fmt.Printf("search value: %s", filter.Search)
-	fmt.Println(filter.Sort)
-	fmt.Println("----")
-
 	// Call the service to fetch users based on the search and sort parameters
 	users, err := h.Service.GetUsers(c.Request.Context(), filter.Search, filter.Sort)
 	if err != nil {

@@ -4,7 +4,6 @@ import (
 	"api/internal/users/domain"
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -61,7 +60,6 @@ func AdminAndUserItself() gin.HandlerFunc {
 		// if role has no value
 		if len(userUUIDStr) == 0 {
 			userUUID, err = uuid.FromString(userUUID.String())
-			fmt.Println(userUUID)
 			if err != nil {
 				c.JSON(http.StatusBadRequest, gin.H{"error": "invalid UUID format in header"})
 				c.Abort()
