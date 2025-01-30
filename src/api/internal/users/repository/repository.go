@@ -6,6 +6,8 @@ import (
 	"context"
 	"fmt"
 
+	uuid "github.com/tentone/mssql-uuid"
+
 	"gorm.io/gorm"
 )
 
@@ -16,7 +18,9 @@ type UserRepository interface {
 	// Updates the details of an existing user
 	UpdateUser(ctx context.Context, user *domain.User) error
 	// Get the user's info
-	GetUserByID(ctx context.Context, userID string) (*domain.User, error)
+	GetUserByID(ctx context.Context, userID uuid.UUID) (*domain.User, error)
+	// List user details
+	GetUsers(ctx context.Context) ([]domain.User, error)
 }
 
 // Performs user's data operations using GORM to interact with the database
@@ -38,15 +42,22 @@ func (r *UserRepositoryImpl) CreateUser(ctx context.Context, user *domain.User) 
 }
 
 func (r *UserRepositoryImpl) UpdateUser(ctx context.Context, user *domain.User) error {
-	return r.DB.WithContext(ctx).Model(&domain.User{}).Where("id = ?", user.ID).Select("name", "email", "phone", "password", "picture").Updates(user).Error
+	return r.DB.WithContext(ctx).Model(&domain.User{}).Where("id = ?", user.ID).
+		Select("name", "email", "phone", "password", "picture").Updates(user).Error
 }
 
 // This was already created on this branch mainly for password change
-func (r *UserRepositoryImpl) GetUserByID(ctx context.Context, userID string) (*domain.User, error) {
+func (r *UserRepositoryImpl) GetUserByID(ctx context.Context, userID uuid.UUID) (*domain.User, error) {
 	var user domain.User
 	err := r.DB.WithContext(ctx).Where("id = ?", userID).First(&user).Error
 	if err != nil {
 		return nil, err
 	}
 	return &user, nil
+}
+
+func (r *UserRepositoryImpl) GetUsers(ctx context.Context) ([]domain.User, error) {
+	var users []domain.User
+	err := r.DB.Find(&users).Error
+	return users, err
 }

@@ -3,11 +3,13 @@ package handler
 import (
 	"api/internal/users/domain"
 	"api/internal/users/usecase"
+	"fmt"
 	"net/http"
 	"strings"
 
+	uuid "github.com/tentone/mssql-uuid"
+
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 )
 
 // Interface for handling HTTP requests related to users
@@ -16,6 +18,8 @@ type UserHandler interface {
 	AddUser(c *gin.Context)
 	// Handles the HTTP request to edit the info from a user
 	EditUser(c *gin.Context)
+	//  Handles the HTTP request to list users
+	ListUsers(c *gin.Context)
 }
 
 // Process HTTP requests and interaction with the UserService for user operations
@@ -58,21 +62,19 @@ func (h *UserHandlerImpl) EditUser(c *gin.Context) {
 
 	// Bind the JSON body to the user struct
 	if err := c.ShouldBindJSON(&user); err != nil {
-		// Return 400 Bad Request if the body is invalid
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
+	fmt.Println(user)
 
 	// Validate UUID format
-	if _, err := uuid.Parse(user.ID); err != nil {
-		// Return 400 Bad Request if the UUID is invalid
+	if _, err := uuid.FromString(user.ID.String()); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid UUID format"})
 		return
 	}
 
 	// User update
 	if err := h.Service.UpdateUser(c.Request.Context(), &user); err != nil {
-		// Return 500 Internal Server Error if update fails
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "Failed to update user",
 			"error":   err.Error(),
@@ -85,4 +87,36 @@ func (h *UserHandlerImpl) EditUser(c *gin.Context) {
 		"message": "User updated successfully",
 		"user":    user,
 	})
+}
+
+func (h *UserHandlerImpl) ListUsers(c *gin.Context) {
+	// Use MustGet since we know that the middleware sent those values
+	search := c.MustGet("search").(string)
+	sortDirection := c.MustGet("sortDirection").(int)
+
+	// Validate the sorting value
+	if sortDirection != 0 && sortDirection != 1 && sortDirection != -1 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid sortDirection. It must be 1 (ascending), -1 (descending), or 0 (no sorting)."})
+		return
+	}
+
+	// Get users based on the provided filter and sorting
+	users, err := h.Service.GetUsers(c.Request.Context(), search, sortDirection)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch users"})
+		return
+	}
+
+	// Prepare the response with UUIDs formatted as strings
+	var response []map[string]string
+	for _, user := range users {
+		response = append(response, map[string]string{
+			"name":    user.Name,
+			"uuid":    user.ID.String(), // Convert UUID to string
+			"picture": user.Picture,
+		})
+	}
+
+	// Return the list of users
+	c.JSON(http.StatusOK, response)
 }
