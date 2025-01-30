@@ -2,9 +2,9 @@ package domain
 
 const (
 	// Normal user
-	ROLE_USER int = 0
+	ROLE_USER bool = false
 	// Admin user
-	ROLE_ADMIN int = 1
+	ROLE_ADMIN bool = true
 )
 
 // User represents a user in the system with personal and authentication details
@@ -22,5 +22,5 @@ type User struct {
 	// User's phone number (required)
 	Phone string `json:"phone" gorm:"type:nvarchar(20)"`
 	// User's role (admin or regular user)
-	Role int `json:"role" gorm:"type:int;not null;default:0"`
+	Role bool `json:"role" gorm:"type:bit;not null;default:0"`
 }
