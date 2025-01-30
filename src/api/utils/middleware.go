@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"api/internal/users/domain"
 	"bytes"
 	"encoding/json"
 	"io"
@@ -15,8 +16,9 @@ import (
 // Middleware that restricts access to certain routes if not an admin
 func AdminOnly() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		role := c.GetHeader("role")
-		if role != "true" {
+		roleStr := c.GetHeader("role")
+		role, err := strconv.ParseBool(roleStr)
+		if err != nil || role != domain.ROLE_ADMIN {
 			c.JSON(http.StatusForbidden, gin.H{"error": "only admins can access this route"})
 			c.Abort()
 			return
@@ -28,12 +30,11 @@ func AdminOnly() gin.HandlerFunc {
 // Middleware that allows access to the route only for admins or the user themselves
 func AdminAndUserItself() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		role := c.GetHeader("role")
+		roleStr := c.GetHeader("role")
 		userUUIDStr := c.GetHeader("uuid")
 
-		// Read the request body into a buffer
 		var requestBody struct {
-			UUID string `json:"uuid"`
+			UUID uuid.UUID `json:"uuid"`
 		}
 
 		bodyBytes, err := io.ReadAll(c.Request.Body)
@@ -45,7 +46,7 @@ func AdminAndUserItself() gin.HandlerFunc {
 
 		// Store the body for future use (since it deletes once it reads it)
 		c.Set("requestBody", bodyBytes)
-		c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes)) // Reset body
+		c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 
 		// Parse JSON body
 		if err := json.Unmarshal(bodyBytes, &requestBody); err != nil {
@@ -55,24 +56,25 @@ func AdminAndUserItself() gin.HandlerFunc {
 		}
 
 		var userUUID uuid.UUID
-		if len(userUUIDStr) == 0 {
-			userUUID, err = uuid.FromString(userUUIDStr)
-			if err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "invalid UUID format in header"})
-				c.Abort()
-				return
-			}
+		// convert string to uuid
+		userUUID, err = uuid.FromString(userUUIDStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid UUID format in header"})
+			c.Abort()
+			return
 		}
 
-		requestUUID, err := uuid.FromString(requestBody.UUID)
+		var role bool
+		// Convert string to boolean
+		role, err = strconv.ParseBool(roleStr)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid UUID format in request body"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid role format in header"})
 			c.Abort()
 			return
 		}
 
 		// Allow access if the user is an admin or the UUID matches
-		if role == "true" || userUUID == requestUUID {
+		if role == domain.ROLE_ADMIN || userUUID == requestBody.UUID {
 			c.Next()
 		} else {
 			c.JSON(http.StatusForbidden, gin.H{"error": "access forbidden"})
@@ -84,9 +86,14 @@ func AdminAndUserItself() gin.HandlerFunc {
 // Middleware that parses sortDirection and search, and checks if the user is admin
 func AdminAndSortMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Check if user is admin
-		role := c.GetHeader("role")
-		if role != "true" {
+		var roleStr string
+		roleStr = c.GetHeader("role")
+
+		var role bool
+		var err error
+		role, err = strconv.ParseBool(roleStr)
+
+		if err != nil || role != domain.ROLE_ADMIN {
 			c.JSON(http.StatusForbidden, gin.H{"error": "only admins can access this route"})
 			c.Abort()
 			return
@@ -95,14 +102,15 @@ func AdminAndSortMiddleware() gin.HandlerFunc {
 		// Get optional query parameters (from headers)
 		search := c.GetHeader("search")
 		sortDirectionStr := c.GetHeader("sortDirection")
-		var sortDirection int
-		var err error
 
+		// Set default direction if nothing provided
+		// Gives an error if the provided int is wrong (# 1, -1 )
+		var sortDirection int
 		if sortDirectionStr != "" {
 			// Convert sortDirectionStr to int
 			sortDirection, err = strconv.Atoi(sortDirectionStr)
 			if err != nil || (sortDirection != 1 && sortDirection != -1) {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid sortDirection"})
+				c.JSON(http.StatusBadRequest, gin.H{"error": "invalid value for sorting direction"})
 				c.Abort()
 				return
 			}

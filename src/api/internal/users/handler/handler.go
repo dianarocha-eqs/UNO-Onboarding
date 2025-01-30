@@ -22,6 +22,13 @@ type UserHandler interface {
 	ListUsers(c *gin.Context)
 }
 
+// Structure response for list users
+type UserResponse struct {
+	Name    string `json:"name"`
+	UUID    string `json:"uuid"`
+	Picture string `json:"picture"`
+}
+
 // Process HTTP requests and interaction with the UserService for user operations
 type UserHandlerImpl struct {
 	Service usecase.UserService
@@ -33,34 +40,30 @@ func NewUserHandler(service usecase.UserService) UserHandler {
 
 func (h *UserHandlerImpl) AddUser(c *gin.Context) {
 
-	// Validate data received on the route
 	var user domain.User
 	if err := c.ShouldBindJSON(&user); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Call the service to create the user
 	ID, err := h.Service.CreateUser(c.Request.Context(), &user)
 	if err != nil {
 		// Check if it's a validation error (missing fields)
-		if strings.Contains(err.Error(), "name, email, and phone are required fields") {
+		if strings.Contains(err.Error(), "required fields") || strings.Contains(err.Error(), "invalid email format") || strings.Contains(err.Error(), "invalid phone number format") {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		} else {
-			// Internal error (in case of duplicate emailm p.ex)
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create user", "error": err.Error()})
+			// Internal error (in case of duplicate email p.ex)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
 		return
 	}
 
-	// Respond with the created user's uuid
 	c.JSON(http.StatusCreated, gin.H{"userId": ID})
 }
 
 func (h *UserHandlerImpl) EditUser(c *gin.Context) {
 	var user domain.User
 
-	// Bind the JSON body to the user struct
 	if err := c.ShouldBindJSON(&user); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
@@ -73,50 +76,40 @@ func (h *UserHandlerImpl) EditUser(c *gin.Context) {
 		return
 	}
 
-	// User update
 	if err := h.Service.UpdateUser(c.Request.Context(), &user); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": "Failed to update user",
-			"error":   err.Error(),
+			"error": err.Error(),
 		})
 		return
 	}
 
-	// Respond with the updated user information and the UUID, return 200 OK on success
-	c.JSON(http.StatusOK, gin.H{
-		"message": "User updated successfully",
-		"user":    user,
-	})
+	c.Status(http.StatusOK)
 }
 
 func (h *UserHandlerImpl) ListUsers(c *gin.Context) {
-	// Use MustGet since we know that the middleware sent those values
+	// Take the values from header to pass on service
 	search := c.MustGet("search").(string)
 	sortDirection := c.MustGet("sortDirection").(int)
 
-	// Validate the sorting value
-	if sortDirection != 0 && sortDirection != 1 && sortDirection != -1 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid sortDirection. It must be 1 (ascending), -1 (descending), or 0 (no sorting)."})
-		return
-	}
-
-	// Get users based on the provided filter and sorting
-	users, err := h.Service.GetUsers(c.Request.Context(), search, sortDirection)
+	var err error
+	var users []domain.User
+	users, err = h.Service.GetUsers(c.Request.Context(), search, sortDirection)
 	if err != nil {
+		if err.Error() == "nothing with that value" {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch users"})
 		return
 	}
 
-	// Prepare the response with UUIDs formatted as strings
-	var response []map[string]string
+	var response []UserResponse
 	for _, user := range users {
-		response = append(response, map[string]string{
-			"name":    user.Name,
-			"uuid":    user.ID.String(), // Convert UUID to string
-			"picture": user.Picture,
+		response = append(response, UserResponse{
+			Name:    user.Name,
+			UUID:    user.ID.String(),
+			Picture: user.Picture,
 		})
 	}
-
-	// Return the list of users
 	c.JSON(http.StatusOK, response)
 }
