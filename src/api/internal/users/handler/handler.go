@@ -37,7 +37,7 @@ func (h *UserHandlerImpl) AddUser(c *gin.Context) {
 	ID, err := h.Service.CreateUser(c.Request.Context(), &user)
 	if err != nil {
 		// Check if it's a validation error (missing fields)
-		if strings.Contains(err.Error(), "name, email, and phone are required fields") {
+		if strings.Contains(err.Error(), "required fields") || strings.Contains(err.Error(), "invalid email format") || strings.Contains(err.Error(), "invalid phone number format") {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		} else {
 			// Internal error (in case of duplicate emailm p.ex)

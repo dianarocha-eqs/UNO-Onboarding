@@ -1,9 +1,16 @@
 package domain
 
+const (
+	// Normal user
+	ROLE_USER int = 0
+	// Admin user
+	ROLE_ADMIN int = 1
+)
+
 // User represents a user in the system with personal and authentication details
 type User struct {
 	// Unique identifier for the user (UUID)
-	ID string `json:"uuid" gorm:"column:id;type:uniqueidentifier;primaryKey"`
+	ID string `json:"uuid" gorm:"column:id;type:uniqueidentifier"`
 	// User's name (required)
 	Name string `json:"name" gorm:"type:nvarchar(255);not null"`
 	// User's email (unique and required)
@@ -15,5 +22,5 @@ type User struct {
 	// User's phone number (required)
 	Phone string `json:"phone" gorm:"type:nvarchar(20)"`
 	// User's role (admin or regular user)
-	Role bool `json:"role" gorm:"type:bit;not null;default:0"`
+	Role int `json:"role" gorm:"type:int;not null;default:0"`
 }
