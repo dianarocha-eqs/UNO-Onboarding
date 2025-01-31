@@ -83,14 +83,14 @@ func sendPasswordToEmail(user *domain.User, password string) error {
 	user.Password = hashedPassword
 	fmt.Println(plainPassword)
 
-	// // Send the plain password to the user's email
-	// emailSubject := "Welcome to UNO Service"
-	// emailBody := fmt.Sprintf("Hello %s,\n\nYour account has been created. Your temporary password is: %s\n\nPlease change it after logging in.", user.Name, plainPassword)
+	// Send the plain password to the user's email
+	emailSubject := "Welcome to UNO Service"
+	emailBody := fmt.Sprintf("Hello %s,\n\nYour account has been created. Your temporary password is: %s\n\nPlease change it after logging in.", user.Name, plainPassword)
 
-	// err = utils.SendEmail(user.Email, emailSubject, emailBody)
-	// if err != nil {
-	// 	return errors.New("user created but failed to send email")
-	// }
+	err = utils.SendEmail(user.Email, emailSubject, emailBody)
+	if err != nil {
+		return errors.New("user created but failed to send email")
+	}
 	return nil
 }
 
