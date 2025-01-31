@@ -5,6 +5,12 @@
       "user": "eqs-digital",
       "password": "B3N5GA!QpgCX^&@Bt+pXhTY6NcZD7NWw",
       "name": "uno-onboarding"
-    }
+    },
+    "email": {
+      "from": "",
+      "password": "",
+      "host": "",
+      "port": 0
   }
+}
   

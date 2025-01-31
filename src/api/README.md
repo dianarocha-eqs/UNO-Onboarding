@@ -51,7 +51,7 @@ Make sure you have the following tools installed on your system:
 
 ---
 
-## API Endpoints
+## API - Sensors Endpoints
 
 Here are the available endpoints for interacting with the sensor data in sensors/routes.go:
 
@@ -69,3 +69,10 @@ Here are the available endpoints for interacting with the sensor data in sensors
 
 - `DELETE /api/sensors/:id`  
   Deletes a specific sensor by its ID.
+
+## API - Users Endpoints 
+
+Here are the available endpoints for interacting with the user data in users/routes.go:
+
+- `POST /v1/users/create`  
+  Creates a new user (if admin).
