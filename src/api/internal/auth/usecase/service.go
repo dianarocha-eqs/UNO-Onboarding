@@ -64,24 +64,18 @@ func (s *AuthServiceImpl) AddToken(ctx context.Context, user *user_domain.User) 
 }
 
 func (s *AuthServiceImpl) RemoveToken(ctx context.Context, tokenStr string) error {
-	// Validate the token first
-	_, err := jwt.ValidateJWT(tokenStr)
+	// Check if the token is valid using IsTokenValid
+	isValid, err := s.IsTokenValid(ctx, tokenStr)
 	if err != nil {
-		return errors.New("invalid token, cannot logout")
+		return fmt.Errorf("failed to validate token: %v", err)
 	}
 
-	// Retrieve the token from the database
-	authToken, err := s.AuthRepo.GetToken(ctx, tokenStr)
-	if err != nil {
-		return fmt.Errorf("failed to get token: %v", err)
+	// If the token is already invalid, return an error
+	if !isValid {
+		return errors.New("token is already invalidated or does not exist")
 	}
 
-	// If the token is already invalidated, it means it's already disconnected
-	if !authToken.IsValid {
-		return errors.New("token is already invalidated")
-	}
-
-	// sets token validation to false
+	// Invalidate the token in the database
 	err = s.AuthRepo.InvalidateToken(ctx, tokenStr)
 	if err != nil {
 		return fmt.Errorf("failed to invalidate token: %v", err)
