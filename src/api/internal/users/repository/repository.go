@@ -21,6 +21,8 @@ type UserRepository interface {
 	GetUserByID(ctx context.Context, userID uuid.UUID) (*domain.User, error)
 	// Get any users info
 	GetUsers(ctx context.Context) ([]domain.User, error)
+	// Get the users info by email
+	GetUserByEmail(ctx context.Context, email string) (*domain.User, error)
 }
 
 // Performs user's data operations using GORM to interact with the database
@@ -61,4 +63,14 @@ func (r *UserRepositoryImpl) GetUsers(ctx context.Context) ([]domain.User, error
 		return nil, err
 	}
 	return users, nil
+}
+
+// Retrieve user by email
+func (r *UserRepositoryImpl) GetUserByEmail(ctx context.Context, email string) (*domain.User, error) {
+	var user domain.User
+	err := r.DB.WithContext(ctx).Where("email = ?", email).First(&user).Error
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
 }

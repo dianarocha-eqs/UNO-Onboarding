@@ -4,6 +4,7 @@ import (
 	"api/internal/users/domain"
 	"api/internal/users/repository"
 	"api/utils"
+
 	"context"
 	"errors"
 	"fmt"
@@ -23,6 +24,8 @@ type UserService interface {
 	UpdateUser(ctx context.Context, user *domain.User) error
 	// Get users
 	GetUsers(ctx context.Context, search string, sortDirection int) ([]domain.User, error)
+	GetUserByID(ctx context.Context, userID uuid.UUID) (*domain.User, error)
+	GetUserByEmail(ctx context.Context, email string) (*domain.User, error)
 }
 
 // Handles user's logic and interaction with the repository
@@ -223,4 +226,24 @@ func (s *UserServiceImpl) GetUsers(ctx context.Context, search string, sortDirec
 	}
 
 	return users, nil
+}
+
+func (s *UserServiceImpl) GetUserByID(ctx context.Context, userID uuid.UUID) (*domain.User, error) {
+	// Validate if UUID is empty
+	if userID == (uuid.UUID{}) {
+		return nil, errors.New("user ID is required")
+	}
+
+	// Fetch user from repository
+	user, err := s.Repo.GetUserByID(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve user: %v", err)
+	}
+
+	return user, nil
+}
+
+// Get user by email
+func (s *UserServiceImpl) GetUserByEmail(ctx context.Context, email string) (*domain.User, error) {
+	return s.Repo.GetUserByEmail(ctx, email)
 }
