@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	uuid "github.com/tentone/mssql-uuid"
 )
 
 // Interface for handling HTTP requests related to users
@@ -21,9 +22,9 @@ type UserHandler interface {
 
 // Structure response for list users
 type UserResponse struct {
-	Name    string `json:"name"`
-	UUID    string `json:"uuid"`
-	Picture string `json:"picture"`
+	Name    string    `json:"name"`
+	UUID    uuid.UUID `json:"uuid"`
+	Picture string    `json:"picture"`
 }
 
 // Structure request for list users
@@ -108,7 +109,7 @@ func (h *UserHandlerImpl) ListUsers(c *gin.Context) {
 	for _, user := range users {
 		response = append(response, UserResponse{
 			Name:    user.Name,
-			UUID:    user.ID.String(),
+			UUID:    user.ID,
 			Picture: user.Picture,
 		})
 	}
