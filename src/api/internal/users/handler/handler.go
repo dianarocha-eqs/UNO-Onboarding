@@ -56,11 +56,13 @@ func (h *UserHandlerImpl) AddUser(c *gin.Context) {
 		} else {
 			// Internal error (in case of duplicate email p.ex)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			// Internal error (in case of duplicate email p.ex)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
 		return
 	}
-
 	c.JSON(http.StatusCreated, gin.H{"userId": ID})
+
 }
 
 func (h *UserHandlerImpl) EditUser(c *gin.Context) {
@@ -72,9 +74,7 @@ func (h *UserHandlerImpl) EditUser(c *gin.Context) {
 	}
 
 	if err := h.Service.UpdateUser(c.Request.Context(), &user); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 

@@ -188,6 +188,8 @@ func (s *UserServiceImpl) GetUsers(ctx context.Context, search string, sortDirec
 		return nil, errors.New("failed to retrieve users")
 	}
 
+	// fmt.Println(users)
+
 	search = strings.Join(strings.Fields(search), " ")
 	// Filter by name or email
 	if search != "" {

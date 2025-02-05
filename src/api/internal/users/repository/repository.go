@@ -48,6 +48,7 @@ func (r *UserRepositoryImpl) UpdateUser(ctx context.Context, user *domain.User) 
 func (r *UserRepositoryImpl) GetUserByID(ctx context.Context, userID uuid.UUID) (*domain.User, error) {
 	var user domain.User
 	err := r.DB.WithContext(ctx).Where("id = ?", userID).First(&user).Error
+	fmt.Printf("%v", user.Role)
 	if err != nil {
 		return nil, err
 	}
