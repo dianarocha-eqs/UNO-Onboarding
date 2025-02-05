@@ -26,6 +26,7 @@ type UserResponse struct {
 	Picture string `json:"picture"`
 }
 
+// Structure request for list users
 type FilterSearchAndSort struct {
 	Search string `json:"search"`
 	Sort   int    `json:"sort"`
@@ -54,8 +55,6 @@ func (h *UserHandlerImpl) AddUser(c *gin.Context) {
 		if strings.Contains(err.Error(), "required fields") || strings.Contains(err.Error(), "invalid email format") || strings.Contains(err.Error(), "invalid phone number format") {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		} else {
-			// Internal error (in case of duplicate email p.ex)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			// Internal error (in case of duplicate email p.ex)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
