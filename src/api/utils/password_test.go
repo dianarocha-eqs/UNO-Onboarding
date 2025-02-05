@@ -32,26 +32,18 @@ func TestGenerateRandomPassword(t *testing.T) {
 	}
 }
 
-// Test for hashed password function
-func TestGenerateRandomPasswordHash(t *testing.T) {
-	password, hashedPassword, err := GenerateRandomPasswordHash()
+func TestGeneratePasswordHash(t *testing.T) {
+	// Set a random password to test
+	password := "randompassword"
+
+	// Test GeneratePasswordHash(password)
+	_, hashedPassword, err := GeneratePasswordHash(password)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	// Check if password is not empty
-	if len(password) == 0 {
-		t.Errorf("expected a non-empty password")
-	}
-
-	// Check if hashed password is not empty
 	if len(hashedPassword) == 0 {
 		t.Errorf("expected a non-empty hashed password")
-	}
-
-	// Compare password with the hashed version
-	if password == hashedPassword {
-		t.Errorf("expected hashed password to be different from plain password")
 	}
 
 	// Verify if the hash is correct
@@ -59,7 +51,35 @@ func TestGenerateRandomPasswordHash(t *testing.T) {
 	hasher.Write([]byte(password))
 	expectedHash := hex.EncodeToString(hasher.Sum(nil))
 
+	// Compare the expected hash with the actual hashed password
 	if hashedPassword != expectedHash {
 		t.Errorf("expected hashed password %s, got %s", expectedHash, hashedPassword)
+	}
+
+	// Test for empty password (simulating random password generation)
+	emptyPassword := ""
+
+	// Generate the hash using an empty password (this should generate a random password)
+	plainPassword, hashedPassword, err := GeneratePasswordHash(emptyPassword)
+	if err != nil {
+		t.Fatalf("unexpected error for empty password: %v", err)
+	}
+
+	if len(plainPassword) == 0 {
+		t.Errorf("expected a non-empty random password")
+	}
+
+	if len(hashedPassword) == 0 {
+		t.Errorf("expected a non-empty hashed password for random password")
+	}
+
+	// Verify if the hash is correct
+	hasher.Reset()
+	hasher.Write([]byte(plainPassword))
+	expectedRandomHash := hex.EncodeToString(hasher.Sum(nil))
+
+	// Compare the expected hash with the actual hashed password
+	if hashedPassword != expectedRandomHash {
+		t.Errorf("expected hashed password %s, got %s for random password", expectedRandomHash, hashedPassword)
 	}
 }

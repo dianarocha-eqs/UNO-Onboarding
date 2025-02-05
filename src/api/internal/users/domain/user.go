@@ -1,6 +1,5 @@
 package domain
 
-// Possible roles for the user
 const (
 	// Normal user
 	ROLE_USER bool = false
