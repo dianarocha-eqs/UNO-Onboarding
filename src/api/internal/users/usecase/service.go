@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	aux "api/auxiliary"
 	"api/internal/users/domain"
 	"api/internal/users/repository"
 	"api/utils"
@@ -43,11 +44,11 @@ func validateRequiredFields(user *domain.User) error {
 	}
 
 	// Validate email
-	if err := utils.ValidateEmail(user.Email); err != nil {
+	if err := aux.ValidateEmail(user.Email); err != nil {
 		return err
 	}
 	// Validate phone number
-	if err := utils.ValidatePhone(user.Phone); err != nil {
+	if err := aux.ValidatePhone(user.Phone); err != nil {
 		return err
 	}
 
