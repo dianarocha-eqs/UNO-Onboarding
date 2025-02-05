@@ -32,6 +32,7 @@ func NewUserService(repo repository.UserRepository) UserService {
 
 // Checks the required fields of the user
 func validateRequiredFields(user *domain.User) error {
+
 	// takes spaces
 	user.Name = strings.Join(strings.Fields(user.Name), " ")
 	user.Email = strings.Join(strings.Fields(user.Email), " ")
@@ -78,10 +79,8 @@ func sendPasswordToEmail(user *domain.User, password string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(plainPassword)
 	// Assign the hashed password to the user
 	user.Password = hashedPassword
-	fmt.Println(plainPassword)
 
 	// Send the plain password to the user's email
 	emailSubject := "Welcome to UNO Service"

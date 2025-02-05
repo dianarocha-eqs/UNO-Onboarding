@@ -12,6 +12,7 @@ import (
 )
 
 // Middleware that restricts access to certain routes if not an admin
+// Middleware that restricts access to certain routes if not an admin
 func AdminOnly() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		roleStr := c.GetHeader("role")
