@@ -4,6 +4,7 @@ import (
 	config "api/configs"
 	"api/internal/users/domain"
 	"context"
+	"database/sql"
 	"fmt"
 
 	uuid "github.com/tentone/mssql-uuid"
@@ -20,7 +21,7 @@ type UserRepository interface {
 	// Get the users info
 	GetUserByID(ctx context.Context, userID uuid.UUID) (*domain.User, error)
 	// Get any users info
-	GetUsers(ctx context.Context) ([]domain.User, error)
+	ListUsers(ctx context.Context, search string, sortDirection int) ([]domain.User, error)
 }
 
 // Performs user's data operations using GORM to interact with the database
@@ -42,24 +43,34 @@ func (r *UserRepositoryImpl) CreateUser(ctx context.Context, user *domain.User) 
 }
 
 func (r *UserRepositoryImpl) UpdateUser(ctx context.Context, user *domain.User) error {
-	return r.DB.WithContext(ctx).Model(&domain.User{}).Where("id = ?", user.ID).Updates(user).Error
+	// any of the fields will sent null if empty, except picture
+	// procedure receives the null and doesnt change those fields
+	return r.DB.Exec(
+		"EXEC UpdateUser ?, ?, ?, ?, ?, ?",
+		user.ID,
+		sql.NullString{String: user.Name, Valid: user.Name != ""},
+		sql.NullString{String: user.Email, Valid: user.Email != ""},
+		sql.NullString{String: user.Phone, Valid: user.Phone != ""},
+		user.Picture,
+		sql.NullString{String: user.Password, Valid: user.Password != ""},
+	).Error
 }
 
 func (r *UserRepositoryImpl) GetUserByID(ctx context.Context, userID uuid.UUID) (*domain.User, error) {
 	var user domain.User
-	err := r.DB.WithContext(ctx).Where("id = ?", userID).First(&user).Error
-	fmt.Printf("%v", user.Role)
+	err := r.DB.Raw("EXEC GetUserByID ?", userID).Scan(&user).Error
 	if err != nil {
 		return nil, err
 	}
 	return &user, nil
 }
 
-func (r *UserRepositoryImpl) GetUsers(ctx context.Context) ([]domain.User, error) {
+func (r *UserRepositoryImpl) ListUsers(ctx context.Context, search string, sortDirection int) ([]domain.User, error) {
 	var users []domain.User
-	err := r.DB.Find(&users).Error
+	err := r.DB.Raw("EXEC ListUsers ?, ?", search, sortDirection).Scan(&users).Error
 	if err != nil {
 		return nil, err
 	}
+
 	return users, nil
 }
