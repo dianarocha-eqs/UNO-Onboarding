@@ -3,7 +3,6 @@ package handler
 import (
 	auth_service "api/internal/auth/usecase"
 	user_service "api/internal/users/usecase"
-	"api/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -50,14 +49,7 @@ func (h *AuthHandlerImpl) Login(c *gin.Context) {
 		return
 	}
 
-	// Hash the provided password and compare it with the stored hash
-	_, hashedPassword, err := utils.GeneratePasswordHash(req.Password)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "error hashing password"})
-		return
-	}
-
-	if hashedPassword != user.Password {
+	if req.Password != user.Password {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid password"})
 		return
 	}
