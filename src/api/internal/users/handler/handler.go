@@ -77,7 +77,7 @@ func (h *UserHandlerImpl) EditUser(c *gin.Context) {
 	err := h.Service.UpdateUser(c.Request.Context(), &user)
 	if err != nil {
 		// this looks weird but i don't know how different should it be
-		if strings.Contains(err.Error(), "nothing updated") {
+		if strings.Contains(err.Error(), "no update") {
 			c.JSON(http.StatusOK, gin.H{"message": err.Error()})
 		} else {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -101,7 +101,7 @@ func (h *UserHandlerImpl) ListUsers(c *gin.Context) {
 	users, err = h.Service.ListUsers(c.Request.Context(), filter.Search, filter.Sort)
 	if err != nil {
 		// Check specific errors for handling them
-		if strings.Contains(err.Error(), "invalid sort direction") {
+		if strings.Contains(err.Error(), "invalid sort direction") || strings.Contains(err.Error(), "no result was found") {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}

@@ -48,9 +48,9 @@ func (r *UserRepositoryImpl) UpdateUser(ctx context.Context, user *domain.User) 
 	return r.DB.Exec(
 		"EXEC UpdateUser ?, ?, ?, ?, ?, ?",
 		user.ID,
-		sql.NullString{String: user.Name, Valid: user.Name != ""},
-		sql.NullString{String: user.Email, Valid: user.Email != ""},
-		sql.NullString{String: user.Phone, Valid: user.Phone != ""},
+		user.Name,
+		user.Email,
+		user.Phone,
 		user.Picture,
 		sql.NullString{String: user.Password, Valid: user.Password != ""},
 	).Error

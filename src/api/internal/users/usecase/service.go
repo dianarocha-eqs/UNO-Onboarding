@@ -135,33 +135,9 @@ func (s *UserServiceImpl) UpdateUser(ctx context.Context, user *domain.User) err
 		return err
 	}
 
-	// Retrieve the current user data
 	currentUser, err := s.Repo.GetUserByID(ctx, user.ID)
 	if err != nil {
-		return fmt.Errorf("failed to retrieve user: %v", err)
-	}
-
-	// Flag to check if any field was updated
-	updated := false
-
-	if user.Name != "" {
-		currentUser.Name = user.Name
-		updated = true
-	}
-
-	if user.Email != "" {
-		currentUser.Email = user.Email
-		updated = true
-	}
-
-	if user.Phone != "" {
-		currentUser.Phone = user.Phone
-		updated = true
-	}
-
-	if user.Picture == "" || user.Picture != "" {
-		currentUser.Picture = user.Picture
-		updated = true
+		return fmt.Errorf("failed to retrieve current user: %v", err)
 	}
 
 	if user.Password != "" {
@@ -170,16 +146,13 @@ func (s *UserServiceImpl) UpdateUser(ctx context.Context, user *domain.User) err
 		if err != nil {
 			return err
 		}
-		currentUser.Password = user.Password
-		updated = true
 	}
 
-	// If no fields were updated, return an error indicating no changes were made
-	if !updated {
-		return fmt.Errorf("nothing updated: no valid fields were provided")
+	if user.Name == currentUser.Name || user.Email == currentUser.Email || user.Phone == currentUser.Phone || user.Picture == currentUser.Picture || user.Password == currentUser.Password {
+		return errors.New("no update to any field")
 	}
 
-	err = s.Repo.UpdateUser(ctx, currentUser)
+	err = s.Repo.UpdateUser(ctx, user)
 	if err != nil {
 		return fmt.Errorf("failed to update user with id %s: %v", user.ID.String(), err)
 	}
@@ -193,10 +166,16 @@ func (s *UserServiceImpl) ListUsers(ctx context.Context, search string, sortDire
 		return nil, errors.New("invalid sort direction: must be 1 (ASC) or -1 (DESC) or 0 (No ORDER)")
 	}
 
+	var users []domain.User
+	var err error
 	// Call the repository (which executes the stored procedure to handle searching and sorting)
-	users, err := s.Repo.ListUsers(ctx, search, sortDirection)
+	users, err = s.Repo.ListUsers(ctx, search, sortDirection)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve users: %w", err)
+	}
+
+	if search != "" && len(users) == 0 {
+		return nil, errors.New("no result was found")
 	}
 
 	return users, nil
