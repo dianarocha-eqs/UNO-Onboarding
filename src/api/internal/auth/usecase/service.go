@@ -35,20 +35,24 @@ func NewAuthService(authRepo auth_repos.AuthRepository, userRepo user_repos.User
 
 func (s *AuthServiceImpl) AddToken(ctx context.Context, user *user_domain.User) (string, error) {
 
+	var err error
+	var existingToken *auth_domain.AuthToken
 	// Check if the user already has a valid token (which means is already logged in)
-	existingToken, err := s.AuthRepo.GetTokenByUserID(ctx, user.ID)
+	existingToken, err = s.AuthRepo.GetTokenByUserID(ctx, user.ID)
 	if err == nil && existingToken.IsValid {
 		return "", errors.New("user already logged in with an active session")
 	}
 
+	var tokenStr string
 	// Generate JWT token
-	tokenStr, err := jwt.GenerateJWT(user)
+	tokenStr, err = jwt.GenerateJWT(user)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate token: %v", err)
 	}
 
+	var authToken *auth_domain.AuthToken
 	// Store token data
-	authToken := &auth_domain.AuthToken{
+	authToken = &auth_domain.AuthToken{
 		UserID:  user.ID,
 		Token:   tokenStr,
 		IsValid: true,
@@ -65,10 +69,14 @@ func (s *AuthServiceImpl) AddToken(ctx context.Context, user *user_domain.User) 
 
 func (s *AuthServiceImpl) RemoveToken(ctx context.Context, tokenStr string) error {
 
-	s.IsTokenValid(ctx, tokenStr)
-
 	var err error
-	// sets token validation to false
+	// Check if the token is valid
+	_, err = s.IsTokenValid(ctx, tokenStr)
+	if err != nil {
+		return err
+	}
+
+	// Sets token validation to false
 	err = s.AuthRepo.InvalidateToken(ctx, tokenStr)
 	if err != nil {
 		return fmt.Errorf("failed to invalidate token: %v", err)
