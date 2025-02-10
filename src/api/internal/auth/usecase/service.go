@@ -35,15 +35,8 @@ func NewAuthService(authRepo auth_repos.AuthRepository, userRepo user_repos.User
 
 func (s *AuthServiceImpl) AddToken(ctx context.Context, user *user_domain.User) (string, error) {
 
-	var err error
-	var existingToken *auth_domain.AuthToken
-	// Check if the user already has a valid token (which means is already logged in)
-	existingToken, err = s.AuthRepo.GetTokenByUserID(ctx, user.ID)
-	if err == nil && existingToken.IsValid {
-		return "", errors.New("user already logged in with an active session")
-	}
-
 	var tokenStr string
+	var err error
 	// Generate JWT token
 	tokenStr, err = jwt.GenerateJWT(user)
 	if err != nil {
