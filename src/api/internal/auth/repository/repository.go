@@ -46,7 +46,6 @@ func (r *AuthRepositoryImpl) StoreToken(ctx context.Context, auth *auth_domain.A
 		END;
 	`
 
-	// Execute the query
 	_, err := r.DB.ExecContext(ctx, query,
 		sql.Named("user_id", auth.UserID),
 		sql.Named("token", auth.Token),
@@ -87,7 +86,6 @@ func (r *AuthRepositoryImpl) InvalidateToken(ctx context.Context, tokenStr strin
 		WHERE token = @token
 	`
 
-	// Execute the update query
 	_, err := r.DB.ExecContext(ctx, query, sql.Named("token", tokenStr))
 	if err != nil {
 		return fmt.Errorf("failed to invalidate token: %v", err)
