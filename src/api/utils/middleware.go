@@ -8,10 +8,11 @@ import (
 	"net/http"
 	"strconv"
 
+	uuid "github.com/tentone/mssql-uuid"
+
 	"github.com/gin-gonic/gin"
 )
 
-// Middleware that restricts access to certain routes if not an admin
 // Middleware that restricts access to certain routes if not an admin
 func AdminOnly() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -30,10 +31,10 @@ func AdminOnly() gin.HandlerFunc {
 func AdminAndUserItself() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		roleStr := c.GetHeader("role")
-		userUUID := c.GetHeader("uuid")
+		userUUIDStr := c.GetHeader("uuid")
 
 		var requestBody struct {
-			UUID string `json:"uuid"`
+			UUID uuid.UUID `json:"uuid"`
 		}
 
 		bodyBytes, err := io.ReadAll(c.Request.Body)
@@ -47,14 +48,46 @@ func AdminAndUserItself() gin.HandlerFunc {
 		c.Set("requestBody", bodyBytes)
 		c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 
+		// Parse JSON body
 		if err := json.Unmarshal(bodyBytes, &requestBody); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid JSON in request body"})
 			c.Abort()
 			return
 		}
-		role, err := strconv.ParseBool(roleStr)
 
-		if err != nil || role == domain.ROLE_ADMIN || userUUID == requestBody.UUID {
+		var userUUID uuid.UUID
+
+		// if userUUIDStr is empty
+		if len(userUUIDStr) == 0 {
+			// Returns a nil UUID
+			userUUID = uuid.FromStringOrNil(userUUIDStr)
+		} else {
+			// changes from string to uuid
+			userUUID, err = uuid.FromString(userUUIDStr)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "invalid UUID format in header"})
+				c.Abort()
+				return
+			}
+		}
+
+		var role bool
+
+		if len(roleStr) == 0 {
+			// which means it will not have access (unless it's the own user)
+			role = domain.ROLE_USER
+		} else {
+			// changes string value to bool
+			role, err = strconv.ParseBool(roleStr)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "invalid UUID format in header"})
+				c.Abort()
+				return
+			}
+		}
+
+		// Allow access if the user is an admin or the UUID matches
+		if role == domain.ROLE_ADMIN || userUUID == requestBody.UUID {
 			c.Next()
 		} else {
 			c.JSON(http.StatusForbidden, gin.H{"error": "access forbidden"})

@@ -1,5 +1,9 @@
 package domain
 
+import (
+	uuid "github.com/tentone/mssql-uuid"
+)
+
 const (
 	// Normal user
 	ROLE_USER bool = false
@@ -10,7 +14,7 @@ const (
 // User represents a user in the system with personal and authentication details
 type User struct {
 	// Unique identifier for the user (UUID)
-	ID string `json:"uuid" gorm:"column:id;type:uniqueidentifier"`
+	ID uuid.UUID `json:"uuid" gorm:"column:id;type:uniqueidentifier"`
 	// User's name (required)
 	Name string `json:"name" gorm:"type:nvarchar(255);not null"`
 	// User's email (unique and required)

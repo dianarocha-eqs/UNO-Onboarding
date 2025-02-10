@@ -6,8 +6,7 @@ import (
 	"net/url"
 	"os"
 
-	"gorm.io/driver/sqlserver"
-	"gorm.io/gorm"
+	"database/sql"
 )
 
 // Holds the database and email configuration details.
@@ -42,55 +41,55 @@ type Config struct {
 // ConfigFilePath is the relative path to the configuration JSON file.
 const ConfigFilePath = "../configs/config.json"
 
-// LoadConfig reads the config file and unmarshals it into a Config object
+// LoadConfig reads and parses the configuration file
 func LoadConfig() (Config, error) {
 	var config Config
 
 	// Read the configuration file
 	data, err := os.ReadFile(ConfigFilePath)
 	if err != nil {
-		return config, fmt.Errorf("could not read config file at %s: %v", ConfigFilePath, err)
+		return config, fmt.Errorf("could not read config file: %v", err)
 	}
 
-	// Parse the JSON
+	// Parse JSON
 	err = json.Unmarshal(data, &config)
 	if err != nil {
 		return config, fmt.Errorf("could not parse config JSON: %v", err)
 	}
 
+	// Override password with environment variable (to mantein security)
+	if envPassword := os.Getenv("DB_PASSWORD"); envPassword != "" {
+		config.DB.Password = envPassword
+	}
+
 	return config, nil
 }
 
-// ConnectDB establishes a connection to the database using the loaded configuration
-func ConnectDB() (*gorm.DB, error) {
-	// Load the database configuration
+// ConnectDB establishes a connection to the SQL Server database
+func ConnectDB() (*sql.DB, error) {
+	// Load database configuration
 	config, err := LoadConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load database config: %v", err)
 	}
 
-	// URL-encode the password to handle special characters
+	// URL-encode password
 	encodedPassword := url.QueryEscape(config.DB.Password)
 
-	// Create the DSN (Data Source Name)
-	dsn := fmt.Sprintf("sqlserver://%s:%s@%s:%d?database=%s",
+	// Construct DSN (Data Source Name) with Azure-compliant parameters
+	dsn := fmt.Sprintf("sqlserver://%s:%s@%s:%d?database=%s&encrypt=true&TrustServerCertificate=false",
 		config.DB.User, encodedPassword, config.DB.Host, config.DB.Port, config.DB.Name)
 
 	// Connect to the database
-	db, err := gorm.Open(sqlserver.Open(dsn), &gorm.Config{
-		DisableForeignKeyConstraintWhenMigrating: true,
-	})
+	db, err := sql.Open("sqlserver", dsn)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to the database: %v", err)
+		return nil, fmt.Errorf("failed to open database connection: %v", err)
 	}
 
-	// Test the database connection
-	sqlDB, err := db.DB()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get database instance: %v", err)
-	}
-	if err = sqlDB.Ping(); err != nil {
-		return nil, fmt.Errorf("database connection test failed: %v", err)
+	// Verify connection
+	if err := db.Ping(); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("failed to ping database: %v", err)
 	}
 
 	return db, nil

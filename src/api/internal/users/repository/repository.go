@@ -4,9 +4,10 @@ import (
 	config "api/configs"
 	"api/internal/users/domain"
 	"context"
+	"database/sql"
 	"fmt"
 
-	"gorm.io/gorm"
+	_ "github.com/denisenkom/go-mssqldb" // Import SQL Server driver
 )
 
 // Interface for user's data operations
@@ -15,13 +16,13 @@ type UserRepository interface {
 	CreateUser(ctx context.Context, user *domain.User) error
 	// Updates the details of an existing user
 	UpdateUser(ctx context.Context, user *domain.User) error
-	// Get the user's info
-	GetUserByID(ctx context.Context, userID string) (*domain.User, error)
+	// Get any users info
+	ListUsers(ctx context.Context, search string, sortDirection int) ([]domain.User, error)
 }
 
 // Performs user's data operations using GORM to interact with the database
 type UserRepositoryImpl struct {
-	DB *gorm.DB
+	DB *sql.DB
 }
 
 // Connects with the database
@@ -34,20 +35,85 @@ func NewUserRepository() (UserRepository, error) {
 }
 
 func (r *UserRepositoryImpl) CreateUser(ctx context.Context, user *domain.User) error {
-	return r.DB.WithContext(ctx).Create(user).Error
+	query := `
+		INSERT INTO Users (id, name, email, password, picture, phone, role)
+		VALUES (NEWID(), @name, @email, @password, @picture, @phone, @role)
+	`
+
+	_, err := r.DB.ExecContext(ctx, query,
+		sql.Named("name", user.Name),
+		sql.Named("email", user.Email),
+		sql.Named("password", user.Password),
+		sql.Named("picture", user.Picture),
+		sql.Named("phone", user.Phone),
+		sql.Named("role", user.Role),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to create user: %v", err)
+	}
+	return nil
 }
 
 func (r *UserRepositoryImpl) UpdateUser(ctx context.Context, user *domain.User) error {
-	return r.DB.WithContext(ctx).Model(&domain.User{}).Where("id = ?", user.ID).Updates(user).Error
+	// if any field received is empty, set it to NULL
+	// COALESCE returns the first non-NULL value in the list
+	// if any field is null, then the previous value remain (expect picture, that can be empty)
+	query := `
+		UPDATE Users
+		SET 
+			name = COALESCE(NULLIF(@name, ''), name),
+			email = COALESCE(NULLIF(@email, ''), email),
+			phone = COALESCE(NULLIF(@phone, ''), phone),
+			picture = NULLIF(@picture, ''),
+			password = COALESCE(NULLIF(@password, ''), password)
+		WHERE id = @id
+	`
+
+	_, err := r.DB.ExecContext(ctx, query,
+		sql.Named("name", user.Name),
+		sql.Named("email", user.Email),
+		sql.Named("phone", user.Phone),
+		sql.Named("picture", user.Picture),
+		sql.Named("password", user.Password),
+		sql.Named("id", user.ID),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to update user: %v", err)
+	}
+	return nil
 }
 
-// This was already created on this branch mainly for password change
-func (r *UserRepositoryImpl) GetUserByID(ctx context.Context, userID string) (*domain.User, error) {
-	var user domain.User
-	err := r.DB.WithContext(ctx).Where("id = ?", userID).First(&user).Error
-	fmt.Printf("%v", user.Role)
+func (r *UserRepositoryImpl) ListUsers(ctx context.Context, search string, sortDirection int) ([]domain.User, error) {
+	query := `
+		SELECT id, name, picture
+		FROM Users
+		WHERE name LIKE '%' + @search + '%' OR email LIKE '%' + @search + '%'
+		ORDER BY CASE WHEN @sortDirection = 1 THEN name END ASC,
+				 CASE WHEN @sortDirection = -1 THEN name END DESC
+	`
+
+	// Execute the query with named parameters
+	rows, err := r.DB.QueryContext(ctx, query,
+		sql.Named("search", search),
+		sql.Named("sortDirection", sortDirection),
+	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to list users: %v", err)
 	}
-	return &user, nil
+	defer rows.Close()
+
+	var users []domain.User
+	for rows.Next() {
+		var user domain.User
+		if err := rows.Scan(&user.ID, &user.Name, &user.Picture); err != nil {
+			return nil, fmt.Errorf("failed to scan user: %v", err)
+		}
+		users = append(users, user)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating users: %v", err)
+	}
+
+	return users, nil
 }
