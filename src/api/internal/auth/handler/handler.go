@@ -45,22 +45,14 @@ func (h *AuthHandlerImpl) Login(c *gin.Context) {
 		return
 	}
 
-	// Fetch user from the database by the e-mail inserted
-	user, err := h.UserService.GetUserByEmail(c.Request.Context(), req.Email)
+	_, hashedpassword, err := utils.GeneratePasswordHash(req.Password)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid email"})
-		return
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate password hash"})
 	}
-
-	// Hash the provided password and compare it with the stored hash
-	_, hashedPassword, err := utils.GeneratePasswordHash(req.Password)
+	// Fetch user by email and password
+	user, err := h.UserService.GetUserByEmailAndPassword(c.Request.Context(), req.Email, hashedpassword)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "error hashing password"})
-		return
-	}
-
-	if hashedPassword != user.Password {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid password"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid email or password"})
 		return
 	}
 

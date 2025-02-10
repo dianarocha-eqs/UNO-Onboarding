@@ -42,7 +42,7 @@ type Claims struct {
 
 // Generate a new JWT token
 func GenerateJWT(user *domain.User) (string, error) {
-	expirationTime := time.Now().Add(72 * time.Hour) // Token expires in 72 hours
+	expirationTime := time.Now().Add(24 * time.Hour) // Token expires in 72 hours
 
 	claims := &Claims{
 		UserID: user.ID,

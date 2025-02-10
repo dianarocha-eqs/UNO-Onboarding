@@ -4,10 +4,10 @@ import (
 	config "api/configs"
 	auth_domain "api/internal/auth/domain"
 	"context"
+	"database/sql"
 	"fmt"
 
-	uuid "github.com/tentone/mssql-uuid"
-	"gorm.io/gorm"
+	_ "github.com/denisenkom/go-mssqldb" // Import SQL Server driver
 )
 
 // Interface for token's data operations
@@ -18,13 +18,11 @@ type AuthRepository interface {
 	GetToken(ctx context.Context, tokenStr string) (*auth_domain.AuthToken, error)
 	// Sets token to false (invalid)
 	InvalidateToken(ctx context.Context, tokenStr string) error
-	// Gets last valid token from user and returns it
-	GetTokenByUserID(ctx context.Context, userID uuid.UUID) (*auth_domain.AuthToken, error)
 }
 
 // GORM to interact with the token's database
 type AuthRepositoryImpl struct {
-	DB *gorm.DB
+	DB *sql.DB
 }
 
 // Connects with the database
@@ -37,34 +35,63 @@ func NewAuthRepository() (AuthRepository, error) {
 }
 
 func (r *AuthRepositoryImpl) StoreToken(ctx context.Context, auth *auth_domain.AuthToken) error {
-	return r.DB.WithContext(ctx).Create(auth).Error
+	query := `
+		BEGIN
+			-- Delete old tokens before inserting a new one
+			DELETE FROM user_tokens WHERE user_id = @user_id;
+
+			-- Insert new token
+			INSERT INTO user_tokens (user_id, token, is_valid)
+			VALUES (@user_id, @token, 1);
+		END;
+	`
+
+	// Execute the query
+	_, err := r.DB.ExecContext(ctx, query,
+		sql.Named("user_id", auth.UserID),
+		sql.Named("token", auth.Token),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to store token: %v", err)
+	}
+
+	return nil
 }
 
 func (r *AuthRepositoryImpl) GetToken(ctx context.Context, tokenStr string) (*auth_domain.AuthToken, error) {
-	var auth auth_domain.AuthToken
-	err := r.DB.WithContext(ctx).Where("token = ?", tokenStr).First(&auth).Error
-	if err != nil {
-		return nil, err
-	}
-	return &auth, nil
-}
+	query := `
+		SELECT user_id, token, is_valid
+		FROM user_tokens
+		WHERE token = @token
+	`
 
-func (r *AuthRepositoryImpl) InvalidateToken(ctx context.Context, tokenStr string) error {
-	return r.DB.WithContext(ctx).Model(&auth_domain.AuthToken{}).
-		Where("token = ?", tokenStr).
-		Update("is_valid", false).Error
-}
-
-func (r *AuthRepositoryImpl) GetTokenByUserID(ctx context.Context, userID uuid.UUID) (*auth_domain.AuthToken, error) {
 	var authToken auth_domain.AuthToken
+	row := r.DB.QueryRowContext(ctx, query, sql.Named("token", tokenStr))
 
-	err := r.DB.WithContext(ctx).
-		Where("user_id = ? AND is_valid = ?", userID, true).
-		First(&authToken).Error
-
+	// Scan the result into the authToken struct
+	err := row.Scan(&authToken.UserID, &authToken.Token, &authToken.IsValid)
 	if err != nil {
-		return nil, err
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("token not found")
+		}
+		return nil, fmt.Errorf("failed to retrieve token: %v", err)
 	}
 
 	return &authToken, nil
+}
+
+func (r *AuthRepositoryImpl) InvalidateToken(ctx context.Context, tokenStr string) error {
+	query := `
+		UPDATE user_tokens
+		SET is_valid = 0
+		WHERE token = @token
+	`
+
+	// Execute the update query
+	_, err := r.DB.ExecContext(ctx, query, sql.Named("token", tokenStr))
+	if err != nil {
+		return fmt.Errorf("failed to invalidate token: %v", err)
+	}
+
+	return nil
 }

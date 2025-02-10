@@ -7,7 +7,6 @@ import (
 	user_domain "api/internal/users/domain"
 	user_repos "api/internal/users/repository"
 	"context"
-	"errors"
 	"fmt"
 )
 
@@ -35,20 +34,17 @@ func NewAuthService(authRepo auth_repos.AuthRepository, userRepo user_repos.User
 
 func (s *AuthServiceImpl) AddToken(ctx context.Context, user *user_domain.User) (string, error) {
 
-	// Check if the user already has a valid token (which means is already logged in)
-	existingToken, err := s.AuthRepo.GetTokenByUserID(ctx, user.ID)
-	if err == nil && existingToken.IsValid {
-		return "", errors.New("user already logged in with an active session")
-	}
-
+	var tokenStr string
+	var err error
 	// Generate JWT token
-	tokenStr, err := jwt.GenerateJWT(user)
+	tokenStr, err = jwt.GenerateJWT(user)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate token: %v", err)
 	}
 
+	var authToken *auth_domain.AuthToken
 	// Store token data
-	authToken := &auth_domain.AuthToken{
+	authToken = &auth_domain.AuthToken{
 		UserID:  user.ID,
 		Token:   tokenStr,
 		IsValid: true,
@@ -64,18 +60,8 @@ func (s *AuthServiceImpl) AddToken(ctx context.Context, user *user_domain.User) 
 }
 
 func (s *AuthServiceImpl) RemoveToken(ctx context.Context, tokenStr string) error {
-	// Check if the token is valid using IsTokenValid
-	isValid, err := s.IsTokenValid(ctx, tokenStr)
-	if err != nil {
-		return fmt.Errorf("failed to validate token: %v", err)
-	}
-
-	// If the token is already invalid, return an error
-	if !isValid {
-		return errors.New("token is already invalidated or does not exist")
-	}
-
-	// Invalidate the token in the database
+	var err error
+	// sets token validation to false
 	err = s.AuthRepo.InvalidateToken(ctx, tokenStr)
 	if err != nil {
 		return fmt.Errorf("failed to invalidate token: %v", err)
@@ -85,12 +71,17 @@ func (s *AuthServiceImpl) RemoveToken(ctx context.Context, tokenStr string) erro
 }
 
 func (s *AuthServiceImpl) IsTokenValid(ctx context.Context, tokenStr string) (bool, error) {
+	// Validate the token first
+	_, err := jwt.ValidateJWT(tokenStr)
+	if err != nil {
+		return false, fmt.Errorf("invalid JWT: %v", err)
+	}
+
 	// Retrieve the token from the database
 	authToken, err := s.AuthRepo.GetToken(ctx, tokenStr)
 	if err != nil {
 		return false, fmt.Errorf("failed to get token: %v", err)
 	}
 
-	// Check if the token is valid
 	return authToken.IsValid, nil
 }
