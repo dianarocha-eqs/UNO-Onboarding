@@ -14,8 +14,8 @@ import (
 type AuthService interface {
 	// Generates the token and stores it
 	AddToken(ctx context.Context, user *user_domain.User) (string, error)
-	// Validate the token and removes it
-	RemoveToken(ctx context.Context, tokenStr string) error
+	// Sets token to invalid
+	InvalidateToken(ctx context.Context, tokenStr string) error
 	// Checks the state of token
 	IsTokenValid(ctx context.Context, tokenStr string) (bool, error)
 }
@@ -59,7 +59,7 @@ func (s *AuthServiceImpl) AddToken(ctx context.Context, user *user_domain.User) 
 	return tokenStr, nil
 }
 
-func (s *AuthServiceImpl) RemoveToken(ctx context.Context, tokenStr string) error {
+func (s *AuthServiceImpl) InvalidateToken(ctx context.Context, tokenStr string) error {
 	var err error
 	// sets token validation to false
 	err = s.AuthRepo.InvalidateToken(ctx, tokenStr)

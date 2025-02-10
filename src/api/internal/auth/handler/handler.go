@@ -86,7 +86,7 @@ func (h *AuthHandlerImpl) Logout(c *gin.Context) {
 	}
 
 	// Call service to invalidate the token
-	err := h.AuthService.RemoveToken(c.Request.Context(), tokenStr.(string))
+	err := h.AuthService.InvalidateToken(c.Request.Context(), tokenStr.(string))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
