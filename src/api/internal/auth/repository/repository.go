@@ -8,7 +8,6 @@ import (
 	"fmt"
 
 	_ "github.com/denisenkom/go-mssqldb" // Import SQL Server driver
-	uuid "github.com/tentone/mssql-uuid"
 )
 
 // Interface for token's data operations
@@ -19,8 +18,6 @@ type AuthRepository interface {
 	GetToken(ctx context.Context, tokenStr string) (*auth_domain.AuthToken, error)
 	// Sets token to false (invalid)
 	InvalidateToken(ctx context.Context, tokenStr string) error
-	// Gets last valid token from user and returns it
-	GetTokenByUserID(ctx context.Context, userID uuid.UUID) (*auth_domain.AuthToken, error)
 }
 
 // GORM to interact with the token's database
@@ -49,7 +46,6 @@ func (r *AuthRepositoryImpl) StoreToken(ctx context.Context, auth *auth_domain.A
 		END;
 	`
 
-	// Execute the query
 	_, err := r.DB.ExecContext(ctx, query,
 		sql.Named("user_id", auth.UserID),
 		sql.Named("token", auth.Token),
@@ -90,35 +86,10 @@ func (r *AuthRepositoryImpl) InvalidateToken(ctx context.Context, tokenStr strin
 		WHERE token = @token
 	`
 
-	// Execute the update query
 	_, err := r.DB.ExecContext(ctx, query, sql.Named("token", tokenStr))
 	if err != nil {
 		return fmt.Errorf("failed to invalidate token: %v", err)
 	}
 
 	return nil
-}
-
-func (r *AuthRepositoryImpl) GetTokenByUserID(ctx context.Context, userID uuid.UUID) (*auth_domain.AuthToken, error) {
-	query := `
-		SELECT user_id, token, is_valid
-		FROM user_tokens
-		WHERE user_id = @user_id AND is_valid = 1
-		ORDER BY created_at DESC
-		FETCH FIRST 1 ROWS ONLY
-	`
-
-	var authToken auth_domain.AuthToken
-	row := r.DB.QueryRowContext(ctx, query, sql.Named("user_id", userID))
-
-	// Scan the result into the authToken struct
-	err := row.Scan(&authToken.UserID, &authToken.Token, &authToken.IsValid)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("no valid token found for user")
-		}
-		return nil, fmt.Errorf("failed to retrieve token by user ID: %v", err)
-	}
-
-	return &authToken, nil
 }
