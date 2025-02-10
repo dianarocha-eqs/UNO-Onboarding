@@ -110,8 +110,6 @@ func (s *UserServiceImpl) CreateUser(ctx context.Context, user *domain.User) (uu
 		return uuid.NilUUID, err
 	}
 
-	// Generate new uuid
-	user.ID = uuid.NewV4()
 	err = s.Repo.CreateUser(ctx, user)
 	if err != nil {
 		return uuid.NilUUID, errors.New("failed to create user")
@@ -135,21 +133,12 @@ func (s *UserServiceImpl) UpdateUser(ctx context.Context, user *domain.User) err
 		return err
 	}
 
-	currentUser, err := s.Repo.GetUserByID(ctx, user.ID)
-	if err != nil {
-		return fmt.Errorf("failed to retrieve current user: %v", err)
-	}
-
 	if user.Password != "" {
 		var err error
 		_, user.Password, err = utils.GeneratePasswordHash(user.Password)
 		if err != nil {
 			return err
 		}
-	}
-
-	if user.Name == currentUser.Name || user.Email == currentUser.Email || user.Phone == currentUser.Phone || user.Picture == currentUser.Picture || user.Password == currentUser.Password {
-		return errors.New("no update to any field")
 	}
 
 	err = s.Repo.UpdateUser(ctx, user)
@@ -163,7 +152,7 @@ func (s *UserServiceImpl) UpdateUser(ctx context.Context, user *domain.User) err
 func (s *UserServiceImpl) ListUsers(ctx context.Context, search string, sortDirection int) ([]domain.User, error) {
 
 	if sortDirection != 1 && sortDirection != -1 && sortDirection != 0 {
-		return nil, errors.New("invalid sort direction: must be 1 (ASC) or -1 (DESC) or 0 (No ORDER)")
+		return nil, errors.New("invalid sort direction: must be 1 (ASC) or -1 (DESC) or 0 (NO ORDER)")
 	}
 
 	var users []domain.User
