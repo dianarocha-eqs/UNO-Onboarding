@@ -122,6 +122,7 @@ func AuthMiddleware(authService auth_service.AuthService) gin.HandlerFunc {
 			return
 		}
 
+		c.Set("token", tokenStr)
 		c.Next()
 	}
 }
