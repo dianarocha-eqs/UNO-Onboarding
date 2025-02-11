@@ -38,18 +38,20 @@ func NewUserRepository() (UserRepository, error) {
 
 func (r *UserRepositoryImpl) CreateUser(ctx context.Context, user *domain.User) error {
 	query := `
-		INSERT INTO Users (id, name, email, password, picture, phone, role)
+		INSERT INTO Users (name, email, password, picture, phone, role)
+		OUTPUT INSERTED.id  -- This will return the ID of the newly created user
 		VALUES (NEWID(), @name, @email, @password, @picture, @phone, @role)
 	`
 
-	_, err := r.DB.ExecContext(ctx, query,
+	err := r.DB.QueryRowContext(ctx, query,
 		sql.Named("name", user.Name),
 		sql.Named("email", user.Email),
 		sql.Named("password", user.Password),
 		sql.Named("picture", user.Picture),
 		sql.Named("phone", user.Phone),
 		sql.Named("role", user.Role),
-	)
+	).Scan(&user.ID)
+
 	if err != nil {
 		return fmt.Errorf("failed to create user: %v", err)
 	}
@@ -91,6 +93,7 @@ func (r *UserRepositoryImpl) ListUsers(ctx context.Context, search string, sortD
 				 CASE WHEN @sortDirection = -1 THEN name END DESC
 	`
 
+	// Execute the query with named parameters
 	rows, err := r.DB.QueryContext(ctx, query,
 		sql.Named("search", search),
 		sql.Named("sortDirection", sortDirection),

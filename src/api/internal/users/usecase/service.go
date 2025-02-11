@@ -175,13 +175,6 @@ func (s *UserServiceImpl) ListUsers(ctx context.Context, search string, sortDire
 }
 
 func (s *UserServiceImpl) GetUserByEmailAndPassword(ctx context.Context, email, password string) (*domain.User, error) {
-	if email == "" {
-		return nil, fmt.Errorf("email cannot be empty")
-	}
-
-	if password == "" {
-		return nil, fmt.Errorf("password cannot be empty")
-	}
 
 	user, err := s.Repo.GetUserByEmailAndPassword(ctx, email, password)
 	if err != nil {
