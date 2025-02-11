@@ -10,6 +10,8 @@ type Sensor struct {
 	Name string `json:"name"`
 	// Category specifies the type of data the sensor collects, such as Temperature, Humidity, or Pressure.
 	Category string `json:"category"`
+	// Color assigned to the sensor.
+	Color string `json:"color"`
 	// Description provides additional information about the sensor's purpose or functionality.
 	Description string `json:"description"`
 	// Visibility defines whether the sensor is publicly visible or private.

@@ -55,9 +55,6 @@ func (r *UserRepositoryImpl) CreateUser(ctx context.Context, user *domain.User) 
 }
 
 func (r *UserRepositoryImpl) UpdateUser(ctx context.Context, user *domain.User) error {
-	// if any field received is empty, set it to NULL
-	// COALESCE returns the first non-NULL value in the list
-	// if any field is null, then the previous value remain (expect picture, that can be empty)
 	query := `
 		UPDATE Users
 		SET 
