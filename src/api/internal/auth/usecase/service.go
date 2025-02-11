@@ -61,7 +61,7 @@ func (s *AuthServiceImpl) AddToken(ctx context.Context, user *user_domain.User) 
 
 func (s *AuthServiceImpl) InvalidateToken(ctx context.Context, tokenStr string) error {
 	var err error
-	// sets token validation to false
+	// Sets token validation to false
 	err = s.AuthRepo.InvalidateToken(ctx, tokenStr)
 	if err != nil {
 		return fmt.Errorf("failed to invalidate token: %v", err)
@@ -71,10 +71,10 @@ func (s *AuthServiceImpl) InvalidateToken(ctx context.Context, tokenStr string) 
 }
 
 func (s *AuthServiceImpl) IsTokenValid(ctx context.Context, tokenStr string) (bool, error) {
-	// Validate the token first
+	// Validate the token first (structure and expiration)
 	_, err := jwt.ValidateJWT(tokenStr)
 	if err != nil {
-		return false, fmt.Errorf("invalid JWT: %v", err)
+		return false, fmt.Errorf("invalid or expired JWT: %v", err)
 	}
 
 	// Retrieve the token from the database
@@ -83,5 +83,6 @@ func (s *AuthServiceImpl) IsTokenValid(ctx context.Context, tokenStr string) (bo
 		return false, fmt.Errorf("failed to get token: %v", err)
 	}
 
+	// Returns the token state (valid or not)
 	return authToken.IsValid, nil
 }
