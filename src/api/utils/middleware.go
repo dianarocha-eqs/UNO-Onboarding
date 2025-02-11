@@ -1,7 +1,6 @@
 package utils
 
 import (
-	auth_domain "api/internal/auth/domain"
 	auth_service "api/internal/auth/usecase"
 	user_domain "api/internal/users/domain"
 	"bytes"
@@ -117,7 +116,7 @@ func AuthMiddleware(authService auth_service.AuthService) gin.HandlerFunc {
 		var isValid bool
 		var err error
 		isValid, err = authService.IsTokenValid(c.Request.Context(), tokenStr)
-		if err != nil || isValid != auth_domain.VALID_TOKEN {
+		if err != nil || !isValid {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
 			c.Abort()
 			return

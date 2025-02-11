@@ -7,8 +7,6 @@ import (
 	"database/sql"
 	"fmt"
 
-	uuid "github.com/tentone/mssql-uuid"
-
 	_ "github.com/denisenkom/go-mssqldb" // Import SQL Server driver
 )
 
@@ -18,8 +16,6 @@ type UserRepository interface {
 	CreateUser(ctx context.Context, user *domain.User) error
 	// Updates the details of an existing user
 	UpdateUser(ctx context.Context, user *domain.User) error
-	// Get the users info
-	GetUserByID(ctx context.Context, userID uuid.UUID) (*domain.User, error)
 	// Get any users info
 	ListUsers(ctx context.Context, search string, sortDirection int) ([]domain.User, error)
 	// Get user by email and password
@@ -67,7 +63,7 @@ func (r *UserRepositoryImpl) UpdateUser(ctx context.Context, user *domain.User) 
 			name = COALESCE(NULLIF(@name, ''), name),
 			email = COALESCE(NULLIF(@email, ''), email),
 			phone = COALESCE(NULLIF(@phone, ''), phone),
-			picture = COALESCE(NULLIF(@picture, ''), picture),
+			picture = NULLIF(@picture, ''),
 			password = COALESCE(NULLIF(@password, ''), password)
 		WHERE id = @id
 	`
@@ -84,27 +80,6 @@ func (r *UserRepositoryImpl) UpdateUser(ctx context.Context, user *domain.User) 
 		return fmt.Errorf("failed to update user: %v", err)
 	}
 	return nil
-}
-
-func (r *UserRepositoryImpl) GetUserByID(ctx context.Context, userID uuid.UUID) (*domain.User, error) {
-	query := `
-		SELECT id, name, email, picture, phone, role
-		FROM Users
-		WHERE id = @id
-	`
-
-	row := r.DB.QueryRowContext(ctx, query, sql.Named("id", userID))
-
-	var user domain.User
-	err := row.Scan(&user.ID, &user.Name, &user.Email, &user.Picture, &user.Phone, &user.Role)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("user not found")
-		}
-		return nil, fmt.Errorf("failed to retrieve user: %v", err)
-	}
-
-	return &user, nil
 }
 
 func (r *UserRepositoryImpl) ListUsers(ctx context.Context, search string, sortDirection int) ([]domain.User, error) {

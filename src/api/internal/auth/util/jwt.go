@@ -1,32 +1,33 @@
 package util
 
 import (
+	"api/configs"
 	"api/internal/users/domain"
 	"errors"
 	"log"
-	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/joho/godotenv"
 	uuid "github.com/tentone/mssql-uuid"
 )
 
 var jwtSecret []byte
 
+// init function to ensure JWT secret is set from config.json
 func init() {
-	// Load environment variables from .env file
-	err := godotenv.Load()
+	// Load configuration from configs/config.json
+	config, err := configs.LoadConfig()
 	if err != nil {
-		log.Fatalf("Error loading .env file")
+		log.Fatalf("Error loading configuration: %v", err)
 	}
 
-	// Retrieve the JWT secret key
-	secret := os.Getenv("JWT_SECRET")
-	if secret == "" {
-		log.Fatal("JWT_SECRET environment variable is not set")
+	// Ensure JWT secret is set
+	if config.JWTSecret == "" {
+		log.Fatal("JWT secret is missing in config.json")
 	}
-	jwtSecret = []byte(secret)
+
+	// Store JWT secret
+	jwtSecret = []byte(config.JWTSecret)
 }
 
 type JWT interface {
