@@ -36,6 +36,8 @@ type Config struct {
 		// Port is the port number for connecting to the email server
 		Port int `json:"port"`
 	} `json:"email"`
+	// JWTSecret holds the JWT secret key
+	JWTSecret string `json:"jwt_secret"`
 }
 
 // ConfigFilePath is the relative path to the configuration JSON file.
@@ -55,11 +57,6 @@ func LoadConfig() (Config, error) {
 	err = json.Unmarshal(data, &config)
 	if err != nil {
 		return config, fmt.Errorf("could not parse config JSON: %v", err)
-	}
-
-	// Override password with environment variable (to mantein security)
-	if envPassword := os.Getenv("DB_PASSWORD"); envPassword != "" {
-		config.DB.Password = envPassword
 	}
 
 	return config, nil

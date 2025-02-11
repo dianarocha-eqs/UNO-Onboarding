@@ -1,7 +1,8 @@
 package utils
 
 import (
-	"api/internal/users/domain"
+	auth_service "api/internal/auth/usecase"
+	user_domain "api/internal/users/domain"
 	"bytes"
 	"encoding/json"
 	"io"
@@ -18,7 +19,7 @@ func AdminOnly() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		roleStr := c.GetHeader("role")
 		role, err := strconv.ParseBool(roleStr)
-		if err != nil || role != domain.ROLE_ADMIN {
+		if err != nil || role != user_domain.ROLE_ADMIN {
 			c.JSON(http.StatusForbidden, gin.H{"error": "only admins can access this route"})
 			c.Abort()
 			return
@@ -75,7 +76,7 @@ func AdminAndUserItself() gin.HandlerFunc {
 
 		if len(roleStr) == 0 {
 			// which means it will not have access (unless it's the own user)
-			role = domain.ROLE_USER
+			role = user_domain.ROLE_USER
 		} else {
 			// changes string value to bool
 			role, err = strconv.ParseBool(roleStr)
@@ -87,11 +88,40 @@ func AdminAndUserItself() gin.HandlerFunc {
 		}
 
 		// Allow access if the user is an admin or the UUID matches
-		if role == domain.ROLE_ADMIN || userUUID == requestBody.UUID {
+		if role == user_domain.ROLE_ADMIN || userUUID == requestBody.UUID {
 			c.Next()
 		} else {
 			c.JSON(http.StatusForbidden, gin.H{"error": "access forbidden"})
 			c.Abort()
 		}
+	}
+}
+
+// Validates the JWT token to authorize access
+func AuthMiddleware(authService auth_service.AuthService) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Get the token from Authorization header
+		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "authorization token required"})
+			c.Abort()
+			return
+		}
+
+		var tokenStr string
+
+		tokenStr = authHeader
+
+		// Validate the token using the service
+		var isValid bool
+		var err error
+		isValid, err = authService.IsTokenValid(c.Request.Context(), tokenStr)
+		if err != nil || !isValid {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
+			c.Abort()
+			return
+		}
+
+		c.Next()
 	}
 }
