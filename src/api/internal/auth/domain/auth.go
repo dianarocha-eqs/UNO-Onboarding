@@ -6,11 +6,6 @@ import (
 	uuid "github.com/tentone/mssql-uuid"
 )
 
-const (
-	INVALID_TOKEN bool = false
-	VALID_TOKEN   bool = true
-)
-
 // AuthToken represents a JWT token stored in the database
 type AuthToken struct {
 	// Foreign key that links to the User table.

@@ -11,6 +11,7 @@
       "password": "",
       "host": "",
       "port": 0
-  }
+  },
+  "jwt_secret": "super-secret-key"
 }
   
