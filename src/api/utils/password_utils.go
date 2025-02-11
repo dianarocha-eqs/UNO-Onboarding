@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"api/internal/users/domain"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
@@ -56,4 +57,21 @@ func GeneratePasswordHash(password string) (string, string, error) {
 	hashedPassword := hex.EncodeToString(hasher.Sum(nil))
 
 	return plainPassword, hashedPassword, nil
+}
+
+// Creates the password and sends it to the user via email
+func CreatePassword(user *domain.User, password string) (string, error) {
+	// Generate password hash (either random or user-provided)
+	var plainPassword string
+	var hashedPassword string
+	var err error
+
+	plainPassword, hashedPassword, err = GeneratePasswordHash(password)
+	if err != nil {
+		return "", err
+	}
+	// Assign the hashed password to the user
+	user.Password = hashedPassword
+
+	return plainPassword, nil
 }
