@@ -57,7 +57,7 @@ func (h *AuthHandlerImpl) Login(c *gin.Context) {
 	// Generate JWT token
 	tokenStr, err := h.AuthService.AddToken(c.Request.Context(), user)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to add token to user"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to login"})
 		return
 	}
 
@@ -65,7 +65,7 @@ func (h *AuthHandlerImpl) Login(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"token": tokenStr,
 		"user": gin.H{
-			"id":      user.ID.String(),
+			"id":      user.ID,
 			"name":    user.Name,
 			"email":   user.Email,
 			"role":    user.Role,
