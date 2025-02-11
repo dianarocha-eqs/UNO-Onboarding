@@ -7,7 +7,6 @@ import (
 	user_domain "api/internal/users/domain"
 	user_repos "api/internal/users/repository"
 	"context"
-	"errors"
 	"fmt"
 )
 
@@ -63,12 +62,6 @@ func (s *AuthServiceImpl) AddToken(ctx context.Context, user *user_domain.User) 
 func (s *AuthServiceImpl) RemoveToken(ctx context.Context, tokenStr string) error {
 
 	var err error
-	// Check if the token is valid
-	_, err = s.IsTokenValid(ctx, tokenStr)
-	if err != nil {
-		return err
-	}
-
 	// Sets token validation to false
 	err = s.AuthRepo.InvalidateToken(ctx, tokenStr)
 	if err != nil {
@@ -79,10 +72,10 @@ func (s *AuthServiceImpl) RemoveToken(ctx context.Context, tokenStr string) erro
 }
 
 func (s *AuthServiceImpl) IsTokenValid(ctx context.Context, tokenStr string) (bool, error) {
-	// Validate the token first
+	// Validate the token first (structure and expiration)
 	_, err := jwt.ValidateJWT(tokenStr)
 	if err != nil {
-		return false, fmt.Errorf("invalid JWT: %v", err)
+		return false, fmt.Errorf("invalid or expired JWT: %v", err)
 	}
 
 	// Retrieve the token from the database
@@ -91,11 +84,6 @@ func (s *AuthServiceImpl) IsTokenValid(ctx context.Context, tokenStr string) (bo
 		return false, fmt.Errorf("failed to get token: %v", err)
 	}
 
-	// Ensure token is still marked as valid in the database
-	if !authToken.IsValid {
-		return false, errors.New("token is revoked or expired")
-	}
-
-	// Check if the token is valid
+	// Returns the token state (valid or not)
 	return authToken.IsValid, nil
 }

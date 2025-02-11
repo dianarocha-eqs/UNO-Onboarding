@@ -174,20 +174,6 @@ func (s *UserServiceImpl) ListUsers(ctx context.Context, search string, sortDire
 	return users, nil
 }
 
-func (s *UserServiceImpl) GetUserByID(ctx context.Context, userID uuid.UUID) (*domain.User, error) {
-	if userID == (uuid.UUID{}) {
-		return nil, errors.New("user ID is required")
-	}
-
-	// Fetch user from repository
-	user, err := s.Repo.GetUserByID(ctx, userID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve user: %v", err)
-	}
-
-	return user, nil
-}
-
 func (s *UserServiceImpl) GetUserByEmailAndPassword(ctx context.Context, email, password string) (*domain.User, error) {
 	if email == "" {
 		return nil, fmt.Errorf("email cannot be empty")
