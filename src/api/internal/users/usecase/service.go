@@ -73,11 +73,11 @@ func (s *UserServiceImpl) CreateUser(ctx context.Context, user *domain.User) (uu
 		return uuid.NilUUID, err
 	}
 
+	user.ID = uuid.NewV4()
 	err = s.Repo.CreateUser(ctx, user)
 	if err != nil {
 		return uuid.NilUUID, errors.New("failed to create user")
 	}
-	fmt.Println(plainPasswordForEmail)
 
 	// Send the email with the plain password (only after user is created)
 	if err = utils.SendEmail(user, plainPasswordForEmail); err != nil {

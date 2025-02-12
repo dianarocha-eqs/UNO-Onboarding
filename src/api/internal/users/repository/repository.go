@@ -38,19 +38,19 @@ func NewUserRepository() (UserRepository, error) {
 
 func (r *UserRepositoryImpl) CreateUser(ctx context.Context, user *domain.User) error {
 	query := `
-		INSERT INTO Users (name, email, password, picture, phone, role)
-		OUTPUT INSERTED.id  -- This will return the ID of the newly created user
-		VALUES (NEWID(), @name, @email, @password, @picture, @phone, @role)
+		INSERT INTO Users (id, name, email, password, picture, phone, role)
+		VALUES (@id, @name, @email, @password, @picture, @phone, @role)
 	`
 
-	err := r.DB.QueryRowContext(ctx, query,
+	_, err := r.DB.ExecContext(ctx, query,
+		sql.Named("id", user.ID),
 		sql.Named("name", user.Name),
 		sql.Named("email", user.Email),
 		sql.Named("password", user.Password),
 		sql.Named("picture", user.Picture),
 		sql.Named("phone", user.Phone),
 		sql.Named("role", user.Role),
-	).Scan(&user.ID)
+	)
 
 	if err != nil {
 		return fmt.Errorf("failed to create user: %v", err)
@@ -65,7 +65,7 @@ func (r *UserRepositoryImpl) UpdateUser(ctx context.Context, user *domain.User) 
 			name = COALESCE(NULLIF(@name, ''), name),
 			email = COALESCE(NULLIF(@email, ''), email),
 			phone = COALESCE(NULLIF(@phone, ''), phone),
-			picture = NULLIF(@picture, ''),
+			picture = @picture,
 			password = COALESCE(NULLIF(@password, ''), password)
 		WHERE id = @id
 	`

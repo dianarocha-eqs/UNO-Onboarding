@@ -62,7 +62,7 @@ func (h *UserHandlerImpl) AddUser(c *gin.Context) {
 		}
 		return
 	}
-	c.JSON(http.StatusCreated, gin.H{"userId": ID})
+	c.JSON(http.StatusCreated, gin.H{"uuid": ID})
 }
 
 func (h *UserHandlerImpl) EditUser(c *gin.Context) {
