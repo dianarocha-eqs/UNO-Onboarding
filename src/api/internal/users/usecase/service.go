@@ -5,6 +5,7 @@ import (
 	"api/internal/users/domain"
 	"api/internal/users/repository"
 	"api/utils"
+
 	"context"
 	"errors"
 	"fmt"
@@ -21,6 +22,8 @@ type UserService interface {
 	UpdateUser(ctx context.Context, user *domain.User) error
 	// Get users
 	ListUsers(ctx context.Context, search string, sortDirection int) ([]domain.User, error)
+	// Get user by email and password
+	GetUserByEmailAndPassword(ctx context.Context, email, password string) (*domain.User, error)
 }
 
 // Handles user's logic and interaction with the repository
@@ -70,6 +73,7 @@ func (s *UserServiceImpl) CreateUser(ctx context.Context, user *domain.User) (uu
 		return uuid.NilUUID, err
 	}
 
+	user.ID = uuid.NewV4()
 	err = s.Repo.CreateUser(ctx, user)
 	if err != nil {
 		return uuid.NilUUID, errors.New("failed to create user")
@@ -128,4 +132,14 @@ func (s *UserServiceImpl) ListUsers(ctx context.Context, search string, sortDire
 	}
 
 	return users, nil
+}
+
+func (s *UserServiceImpl) GetUserByEmailAndPassword(ctx context.Context, email, password string) (*domain.User, error) {
+
+	user, err := s.Repo.GetUserByEmailAndPassword(ctx, email, password)
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve user: %v", err)
+	}
+
+	return user, nil
 }

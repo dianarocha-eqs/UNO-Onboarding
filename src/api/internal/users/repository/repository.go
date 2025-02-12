@@ -18,6 +18,8 @@ type UserRepository interface {
 	UpdateUser(ctx context.Context, user *domain.User) error
 	// Get any users info
 	ListUsers(ctx context.Context, search string, sortDirection int) ([]domain.User, error)
+	// Get user by email and password
+	GetUserByEmailAndPassword(ctx context.Context, email, password string) (*domain.User, error)
 }
 
 // Performs user's data operations using GORM to interact with the database
@@ -37,10 +39,11 @@ func NewUserRepository() (UserRepository, error) {
 func (r *UserRepositoryImpl) CreateUser(ctx context.Context, user *domain.User) error {
 	query := `
 		INSERT INTO Users (id, name, email, password, picture, phone, role)
-		VALUES (NEWID(), @name, @email, @password, @picture, @phone, @role)
+		VALUES (@id, @name, @email, @password, @picture, @phone, @role)
 	`
 
 	_, err := r.DB.ExecContext(ctx, query,
+		sql.Named("id", user.ID),
 		sql.Named("name", user.Name),
 		sql.Named("email", user.Email),
 		sql.Named("password", user.Password),
@@ -48,6 +51,7 @@ func (r *UserRepositoryImpl) CreateUser(ctx context.Context, user *domain.User) 
 		sql.Named("phone", user.Phone),
 		sql.Named("role", user.Role),
 	)
+
 	if err != nil {
 		return fmt.Errorf("failed to create user: %v", err)
 	}
@@ -61,7 +65,7 @@ func (r *UserRepositoryImpl) UpdateUser(ctx context.Context, user *domain.User) 
 			name = COALESCE(NULLIF(@name, ''), name),
 			email = COALESCE(NULLIF(@email, ''), email),
 			phone = COALESCE(NULLIF(@phone, ''), phone),
-			picture = NULLIF(@picture, ''),
+			picture = @picture,
 			password = COALESCE(NULLIF(@password, ''), password)
 		WHERE id = @id
 	`
@@ -113,4 +117,25 @@ func (r *UserRepositoryImpl) ListUsers(ctx context.Context, search string, sortD
 	}
 
 	return users, nil
+}
+
+func (r *UserRepositoryImpl) GetUserByEmailAndPassword(ctx context.Context, email, password string) (*domain.User, error) {
+	query := `
+		SELECT id, name, email, picture, phone, role
+		FROM Users
+		WHERE email = @email AND password = @password
+	`
+
+	row := r.DB.QueryRowContext(ctx, query, sql.Named("email", email), sql.Named("password", password))
+
+	var user domain.User
+	err := row.Scan(&user.ID, &user.Name, &user.Email, &user.Picture, &user.Phone, &user.Role)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("invalid email or password")
+		}
+		return nil, fmt.Errorf("failed to retrieve user: %v", err)
+	}
+
+	return &user, nil
 }
