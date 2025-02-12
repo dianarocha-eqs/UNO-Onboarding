@@ -47,17 +47,16 @@ func (h *UserHandlerImpl) AddUser(c *gin.Context) {
 
 	var user domain.User
 
-	// Retrieve the token from context (set by middleware)
 	tokenStr, exists := c.Get("token")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "failed to retrieve token from authorization header"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "failed to retrieve token set on authorization header"})
 		return
 	}
 
 	str := tokenStr.(string)
 	role, _, err := h.Service.GetRoutesAuthorization(c.Request.Context(), str)
 	if err != nil || role != domain.ROLE_ADMIN {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "this user is not authorized to create a new user"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "current user is not authorized to create a new user"})
 		return
 	}
 
@@ -84,17 +83,16 @@ func (h *UserHandlerImpl) EditUser(c *gin.Context) {
 
 	var user domain.User
 
-	// Retrieve the token from context (set by middleware)
 	tokenStr, exists := c.Get("token")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "failed to retrieve token from authorization header"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "failed to retrieve token set on authorization header"})
 		return
 	}
 
 	str := tokenStr.(string)
 	role, user_id, err := h.Service.GetRoutesAuthorization(c.Request.Context(), str)
 	if err != nil || role != domain.ROLE_ADMIN || user_id != user.ID {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "this user is not authorized to edit this user"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "current user is not authorized to edit this user"})
 		return
 	}
 
