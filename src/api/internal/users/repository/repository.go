@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	_ "github.com/denisenkom/go-mssqldb" // Import SQL Server driver
+	uuid "github.com/tentone/mssql-uuid"
 )
 
 // Interface for user's data operations
@@ -20,6 +21,8 @@ type UserRepository interface {
 	ListUsers(ctx context.Context, search string, sortDirection int) ([]domain.User, error)
 	// Get user by email and password
 	GetUserByEmailAndPassword(ctx context.Context, email, password string) (*domain.User, error)
+	// Checks user's role and uuid from token
+	GetRoutesAuthorization(ctx context.Context, tokenStr string) (bool, uuid.UUID, error)
 }
 
 // Performs user's data operations using GORM to interact with the database
@@ -138,4 +141,28 @@ func (r *UserRepositoryImpl) GetUserByEmailAndPassword(ctx context.Context, emai
 	}
 
 	return &user, nil
+}
+
+func (r *UserRepositoryImpl) GetRoutesAuthorization(ctx context.Context, tokenStr string) (bool, uuid.UUID, error) {
+	query := `
+		SELECT users.role, users.id
+		FROM users
+		INNER JOIN user_tokens
+		ON user_tokens.user_id = users.id
+		WHERE user_tokens.token = @token
+	`
+
+	var role bool
+	var userid uuid.UUID
+	row := r.DB.QueryRowContext(ctx, query, sql.Named("token", tokenStr))
+	// Scan the result for role and uuid
+	err := row.Scan(&role, &userid)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false, uuid.NilUUID, fmt.Errorf("token not found")
+		}
+		return false, uuid.NilUUID, fmt.Errorf("failed to retrieve role and user id: %v", err)
+	}
+
+	return role, userid, nil
 }

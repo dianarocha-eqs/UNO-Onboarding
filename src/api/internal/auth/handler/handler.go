@@ -82,7 +82,7 @@ func (h *AuthHandlerImpl) Logout(c *gin.Context) {
 	// Retrieve the token from context (set by middleware)
 	tokenStr, exists := c.Get("token")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "authorization token required"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "failed to retrieve token from authorization header"})
 		return
 	}
 
@@ -93,5 +93,5 @@ func (h *AuthHandlerImpl) Logout(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})
+	c.Status(http.StatusOK)
 }
