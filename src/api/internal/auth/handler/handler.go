@@ -15,6 +15,8 @@ type AuthHandler interface {
 	Login(c *gin.Context)
 	// Handles the HTTP request to logout a user
 	Logout(c *gin.Context)
+	// Handles the HTTP request to reset password
+	ResetPassword(c *gin.Context)
 }
 
 // Process HTTP requests and interaction with the AuthService and UserService for authentication operations
@@ -34,6 +36,12 @@ func NewAuthHandler(authService auth_service.AuthService, userService user_servi
 type loginRequest struct {
 	Email    string `json:"email" binding:"required"`
 	Password string `json:"password" binding:"required"`
+}
+
+// Structure request for reset password
+type ResetPasswordRequest struct {
+	Token    string `json:"token"`
+	Password string `json:"password"`
 }
 
 func (h *AuthHandlerImpl) Login(c *gin.Context) {
@@ -93,4 +101,45 @@ func (h *AuthHandlerImpl) Logout(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})
+}
+
+func (h *AuthHandlerImpl) ResetPassword(c *gin.Context) {
+
+	// Retrieve the token from context (set by middleware)
+	tokenStr, exists := c.Get("token")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "authorization token required"})
+		return
+	}
+
+	var req ResetPasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid token or password"})
+		return
+	}
+
+	if tokenStr != req.Token {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
+		return
+	}
+
+	// Fetch user by token
+	userID, err := h.AuthService.GetUserByToken(c.Request.Context(), req.Token)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
+		return
+	}
+
+	_, hashedPassword, err := utils.GeneratePasswordHash(req.Password)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate password hash"})
+	}
+
+	err = h.UserService.UpdatePassword(c.Request.Context(), userID, hashedPassword)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update password"})
+		return
+	}
+
+	c.Status(http.StatusOK)
 }

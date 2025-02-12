@@ -24,6 +24,8 @@ type UserService interface {
 	ListUsers(ctx context.Context, search string, sortDirection int) ([]domain.User, error)
 	// Get user by email and password
 	GetUserByEmailAndPassword(ctx context.Context, email, password string) (*domain.User, error)
+	// Only update password -> in tests only
+	UpdatePassword(ctx context.Context, userID uuid.UUID, password string) error
 }
 
 // Handles user's logic and interaction with the repository
@@ -66,18 +68,21 @@ func (s *UserServiceImpl) CreateUser(ctx context.Context, user *domain.User) (uu
 		return uuid.NilUUID, err
 	}
 
-	// Create the password (and hash it)
+	// Create the hashed password
 	var plainPasswordForEmail string
-	plainPasswordForEmail, err = utils.CreatePassword(user, "")
+	var hashedPassword string
+	plainPasswordForEmail, hashedPassword, err = utils.GeneratePasswordHash("")
 	if err != nil {
 		return uuid.NilUUID, err
 	}
 
+	user.Password = hashedPassword
+
+	user.ID = uuid.NewV4()
 	err = s.Repo.CreateUser(ctx, user)
 	if err != nil {
 		return uuid.NilUUID, errors.New("failed to create user")
 	}
-	fmt.Println(plainPasswordForEmail)
 
 	// Send the email with the plain password (only after user is created)
 	if err = utils.SendEmail(user, plainPasswordForEmail); err != nil {
@@ -135,11 +140,21 @@ func (s *UserServiceImpl) ListUsers(ctx context.Context, search string, sortDire
 }
 
 func (s *UserServiceImpl) GetUserByEmailAndPassword(ctx context.Context, email, password string) (*domain.User, error) {
-
 	user, err := s.Repo.GetUserByEmailAndPassword(ctx, email, password)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve user: %v", err)
 	}
 
 	return user, nil
+}
+
+func (s *UserServiceImpl) UpdatePassword(ctx context.Context, userID uuid.UUID, password string) error {
+
+	var err error
+	err = s.Repo.UpdatePassword(ctx, userID, password)
+	if err != nil {
+		return fmt.Errorf("failed to update password for user with id %s: %v", userID, err)
+	}
+
+	return nil
 }

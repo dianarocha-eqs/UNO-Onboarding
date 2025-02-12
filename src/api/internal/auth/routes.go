@@ -41,6 +41,7 @@ func RegisterAuthRoutes(router *gin.Engine) {
 	protect := router.Group("/v1/")
 	protect.Use(middleware.AuthMiddleware(authService))
 	{
+		protect.POST("/users/change-password", h.ResetPassword)
 		protect.POST("/auth/logout", h.Logout)
 	}
 }

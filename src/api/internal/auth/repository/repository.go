@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	_ "github.com/denisenkom/go-mssqldb" // Import SQL Server driver
+	uuid "github.com/tentone/mssql-uuid"
 )
 
 // Interface for token's data operations
@@ -18,6 +19,8 @@ type AuthRepository interface {
 	GetToken(ctx context.Context, tokenStr string) (*auth_domain.AuthToken, error)
 	// Sets token to false (invalid)
 	InvalidateToken(ctx context.Context, tokenStr string) error
+	// Gets the user by token
+	GetUserByToken(ctx context.Context, token string) (uuid.UUID, error)
 }
 
 // GORM to interact with the token's database
@@ -92,4 +95,28 @@ func (r *AuthRepositoryImpl) InvalidateToken(ctx context.Context, tokenStr strin
 	}
 
 	return nil
+}
+
+func (r *AuthRepositoryImpl) GetUserByToken(ctx context.Context, token string) (uuid.UUID, error) {
+	query := `
+		SELECT users.id
+		FROM user_tokens
+		INNER JOIN users
+		ON user_tokens.user_id = users.id
+		WHERE user_tokens.token = @token
+	`
+
+	var userid uuid.UUID
+	row := r.DB.QueryRowContext(ctx, query,
+		sql.Named("token", token),
+	)
+	err := row.Scan(&userid)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return uuid.NilUUID, fmt.Errorf("no user with this token")
+		}
+		return uuid.NilUUID, fmt.Errorf("failed to retrieve user: %v", err)
+	}
+
+	return userid, nil
 }

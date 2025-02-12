@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	_ "github.com/denisenkom/go-mssqldb" // Import SQL Server driver
+	uuid "github.com/tentone/mssql-uuid"
 )
 
 // Interface for user's data operations
@@ -20,6 +21,8 @@ type UserRepository interface {
 	ListUsers(ctx context.Context, search string, sortDirection int) ([]domain.User, error)
 	// Get user by email and password
 	GetUserByEmailAndPassword(ctx context.Context, email, password string) (*domain.User, error)
+	// Only update password -> in tests only
+	UpdatePassword(ctx context.Context, userID uuid.UUID, password string) error
 }
 
 // Performs user's data operations using GORM to interact with the database
@@ -38,19 +41,19 @@ func NewUserRepository() (UserRepository, error) {
 
 func (r *UserRepositoryImpl) CreateUser(ctx context.Context, user *domain.User) error {
 	query := `
-		INSERT INTO Users (name, email, password, picture, phone, role)
-		OUTPUT INSERTED.id  -- This will return the ID of the newly created user
-		VALUES (NEWID(), @name, @email, @password, @picture, @phone, @role)
+		INSERT INTO Users (id, name, email, password, picture, phone, role)
+		VALUES (@id, @name, @email, @password, @picture, @phone, @role)
 	`
 
-	err := r.DB.QueryRowContext(ctx, query,
+	_, err := r.DB.ExecContext(ctx, query,
+		sql.Named("id", user.ID),
 		sql.Named("name", user.Name),
 		sql.Named("email", user.Email),
 		sql.Named("password", user.Password),
 		sql.Named("picture", user.Picture),
 		sql.Named("phone", user.Phone),
 		sql.Named("role", user.Role),
-	).Scan(&user.ID)
+	)
 
 	if err != nil {
 		return fmt.Errorf("failed to create user: %v", err)
@@ -125,9 +128,7 @@ func (r *UserRepositoryImpl) GetUserByEmailAndPassword(ctx context.Context, emai
 		FROM Users
 		WHERE email = @email AND password = @password
 	`
-
 	row := r.DB.QueryRowContext(ctx, query, sql.Named("email", email), sql.Named("password", password))
-
 	var user domain.User
 	err := row.Scan(&user.ID, &user.Name, &user.Email, &user.Picture, &user.Phone, &user.Role)
 	if err != nil {
@@ -138,4 +139,22 @@ func (r *UserRepositoryImpl) GetUserByEmailAndPassword(ctx context.Context, emai
 	}
 
 	return &user, nil
+}
+
+func (r *UserRepositoryImpl) UpdatePassword(ctx context.Context, userID uuid.UUID, password string) error {
+	query := `
+		UPDATE Users
+		SET 
+			password = @password
+		WHERE id = @id
+	`
+
+	_, err := r.DB.ExecContext(ctx, query,
+		sql.Named("password", password),
+		sql.Named("id", userID),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to update user's password: %v", err)
+	}
+	return nil
 }

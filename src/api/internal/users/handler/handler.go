@@ -3,7 +3,6 @@ package handler
 import (
 	"api/internal/users/domain"
 	"api/internal/users/usecase"
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -77,7 +76,6 @@ func (h *UserHandlerImpl) EditUser(c *gin.Context) {
 	// Call UpdateUser service
 	err := h.Service.UpdateUser(c.Request.Context(), &user)
 	if err != nil {
-		fmt.Println(user)
 		// this looks weird but i don't know how different should it be
 		if strings.Contains(err.Error(), "name, email, and phone") {
 			c.JSON(http.StatusForbidden, gin.H{"message": err.Error()})
