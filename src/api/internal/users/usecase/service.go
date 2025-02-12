@@ -24,6 +24,8 @@ type UserService interface {
 	ListUsers(ctx context.Context, search string, sortDirection int) ([]domain.User, error)
 	// Get user by email and password
 	GetUserByEmailAndPassword(ctx context.Context, email, password string) (*domain.User, error)
+	// Checks user's role and uuid from token
+	GetRoutesAuthorization(ctx context.Context, tokenStr string) (bool, uuid.UUID, error)
 }
 
 // Handles user's logic and interaction with the repository
@@ -37,7 +39,6 @@ func NewUserService(repo repository.UserRepository) UserService {
 
 // Checks the required fields and their format
 func validateRequiredFields(user *domain.User) error {
-
 	// trim spaces for required fields only
 	user.Name = strings.Join(strings.Fields(user.Name), " ")
 	user.Email = strings.Join(strings.Fields(user.Email), " ")
@@ -73,11 +74,11 @@ func (s *UserServiceImpl) CreateUser(ctx context.Context, user *domain.User) (uu
 		return uuid.NilUUID, err
 	}
 
+	user.ID = uuid.NewV4()
 	err = s.Repo.CreateUser(ctx, user)
 	if err != nil {
 		return uuid.NilUUID, errors.New("failed to create user")
 	}
-	fmt.Println(plainPasswordForEmail)
 
 	// Send the email with the plain password (only after user is created)
 	if err = utils.SendEmail(user, plainPasswordForEmail); err != nil {
@@ -114,7 +115,6 @@ func (s *UserServiceImpl) UpdateUser(ctx context.Context, user *domain.User) err
 }
 
 func (s *UserServiceImpl) ListUsers(ctx context.Context, search string, sortDirection int) ([]domain.User, error) {
-
 	if sortDirection != 1 && sortDirection != -1 && sortDirection != 0 {
 		return nil, errors.New("invalid sort direction: must be 1 (ASC) or -1 (DESC) or 0 (NO ORDER)")
 	}
@@ -135,11 +135,19 @@ func (s *UserServiceImpl) ListUsers(ctx context.Context, search string, sortDire
 }
 
 func (s *UserServiceImpl) GetUserByEmailAndPassword(ctx context.Context, email, password string) (*domain.User, error) {
-
 	user, err := s.Repo.GetUserByEmailAndPassword(ctx, email, password)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve user: %v", err)
 	}
 
 	return user, nil
+}
+
+func (s *UserServiceImpl) GetRoutesAuthorization(ctx context.Context, tokenStr string) (bool, uuid.UUID, error) {
+	role, userID, err := s.Repo.GetRoutesAuthorization(ctx, tokenStr)
+	if err != nil {
+		return false, uuid.NilUUID, fmt.Errorf("failed to get data from token: %v", err)
+	}
+
+	return role, userID, nil
 }

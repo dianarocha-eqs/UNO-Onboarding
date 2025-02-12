@@ -46,6 +46,20 @@ func NewUserHandler(service usecase.UserService) UserHandler {
 func (h *UserHandlerImpl) AddUser(c *gin.Context) {
 
 	var user domain.User
+
+	tokenStr, exists := c.Get("token")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "failed to retrieve token set on authorization header"})
+		return
+	}
+
+	str := tokenStr.(string)
+	role, _, err := h.Service.GetRoutesAuthorization(c.Request.Context(), str)
+	if err != nil || role != domain.ROLE_ADMIN {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "current user is not authorized to create a new user"})
+		return
+	}
+
 	if err := c.ShouldBindJSON(&user); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -62,11 +76,25 @@ func (h *UserHandlerImpl) AddUser(c *gin.Context) {
 		}
 		return
 	}
-	c.JSON(http.StatusCreated, gin.H{"userId": ID})
+	c.JSON(http.StatusCreated, gin.H{"uuid": ID})
 }
 
 func (h *UserHandlerImpl) EditUser(c *gin.Context) {
+
 	var user domain.User
+
+	tokenStr, exists := c.Get("token")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "failed to retrieve token set on authorization header"})
+		return
+	}
+
+	str := tokenStr.(string)
+	role, user_id, err := h.Service.GetRoutesAuthorization(c.Request.Context(), str)
+	if err != nil || role != domain.ROLE_ADMIN || user_id != user.ID {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "current user is not authorized to edit this user"})
+		return
+	}
 
 	// Bind JSON to user struct
 	if err := c.ShouldBindJSON(&user); err != nil {
@@ -75,7 +103,7 @@ func (h *UserHandlerImpl) EditUser(c *gin.Context) {
 	}
 
 	// Call UpdateUser service
-	err := h.Service.UpdateUser(c.Request.Context(), &user)
+	err = h.Service.UpdateUser(c.Request.Context(), &user)
 	if err != nil {
 		fmt.Println(user)
 		// this looks weird but i don't know how different should it be

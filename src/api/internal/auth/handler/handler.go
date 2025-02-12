@@ -49,6 +49,7 @@ func (h *AuthHandlerImpl) Login(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate password hash"})
 	}
+
 	// Fetch user by email and password
 	user, err := h.UserService.GetUserByEmailAndPassword(c.Request.Context(), req.Email, hashedpassword)
 	if err != nil {
@@ -81,7 +82,7 @@ func (h *AuthHandlerImpl) Logout(c *gin.Context) {
 	// Retrieve the token from context (set by middleware)
 	tokenStr, exists := c.Get("token")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "authorization token required"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "failed to retrieve token from authorization header"})
 		return
 	}
 
@@ -92,5 +93,5 @@ func (h *AuthHandlerImpl) Logout(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})
+	c.Status(http.StatusOK)
 }
