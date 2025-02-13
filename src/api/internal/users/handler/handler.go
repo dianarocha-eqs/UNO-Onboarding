@@ -21,6 +21,8 @@ type UserHandler interface {
 	EditUser(c *gin.Context)
 	//  Handles the HTTP request to list users
 	ListUsers(c *gin.Context)
+	// Handles the HTTP request to recover password
+	RecoverPassword(c *gin.Context)
 	// Handles the HTTP request to reset password
 	ResetPassword(c *gin.Context)
 }
@@ -42,6 +44,11 @@ type FilterSearchAndSort struct {
 type ResetPasswordRequest struct {
 	Token    string `json:"token"`
 	Password string `json:"password"`
+}
+
+// Structure request for recovery password
+type RecoverPasswordRequest struct {
+	Email string `json:"email"`
 }
 
 // Process HTTP requests and interaction with the UserService for user operations
@@ -172,6 +179,56 @@ func (h *UserHandlerImpl) ListUsers(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
+func (h *UserHandlerImpl) RecoverPassword(c *gin.Context) {
+
+	var req RecoverPasswordRequest
+	var err error
+	if err = c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid email"})
+		return
+	}
+
+	var user *domain.User
+	user, err = h.UserService.GetUserByEmail(c.Request.Context(), req.Email)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to retrieve user by email"})
+		return
+	}
+
+	_, err = h.AuthService.AddTokenForPasswordRecovery(c.Request.Context(), user)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "failed to add token for password recovery"})
+		return
+	}
+
+	// GENERATES RANDOM PASSWORD FOR NOW
+	var newPassword string
+	newPassword, err = utils.GenerateRandomPassword(12)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate password"})
+		return
+	}
+
+	var emailSubject string
+	var emailBody string
+	// Email content
+	emailSubject = "Password Reset Request"
+	emailBody = fmt.Sprintf(
+		"Hello,\n\n. This is your new password: %s.",
+		newPassword,
+	)
+
+	// Send email
+	err = utils.CreateEmail(req.Email, emailSubject, emailBody)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to send new password to email"})
+		return
+	}
+
+	// Respond with success
+	c.Status(http.StatusOK)
+}
+
 func (h *UserHandlerImpl) ResetPassword(c *gin.Context) {
 
 	var req ResetPasswordRequest
@@ -182,16 +239,18 @@ func (h *UserHandlerImpl) ResetPassword(c *gin.Context) {
 
 	var userID uuid.UUID
 	var err error
-	// Fetch user by token
-	userID, err = h.AuthService.GetUserByPasswordResetToken(c.Request.Context(), req.Token)
+	// Fetch user id by token to check the validation state and proceed
+	userID, err = h.AuthService.GetUserByTokenToResetPassword(c.Request.Context(), req.Token)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "failed to get user by token to reset password"})
 		return
 	}
 
-	_, hashedPassword, err := utils.GeneratePasswordHash(req.Password)
+	var hashedPassword string
+	// hash the password received to store in database (never plain password)
+	_, hashedPassword, err = utils.GeneratePasswordHash(req.Password)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate password hash"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to hash password"})
 		return
 	}
 
@@ -202,6 +261,7 @@ func (h *UserHandlerImpl) ResetPassword(c *gin.Context) {
 	}
 
 	if err = h.AuthService.DeleteToken(c.Request.Context(), req.Token); err != nil {
+		// just a print in order to warn, but still does reset password
 		fmt.Printf("Warning: Failed to delete token: %v\n", err)
 	}
 

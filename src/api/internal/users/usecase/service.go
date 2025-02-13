@@ -24,6 +24,8 @@ type UserService interface {
 	ListUsers(ctx context.Context, search string, sortDirection int) ([]domain.User, error)
 	// Get user by email and password
 	GetUserByEmailAndPassword(ctx context.Context, email, password string) (*domain.User, error)
+	// Get user by email
+	GetUserByEmail(ctx context.Context, email string) (*domain.User, error)
 	// Checks user's role and uuid from token
 	GetRoutesAuthorization(ctx context.Context, tokenStr string, getRole *bool, getUserID *uuid.UUID) error
 	// Only update password
@@ -82,9 +84,15 @@ func (s *UserServiceImpl) CreateUser(ctx context.Context, user *domain.User) (uu
 		return uuid.NilUUID, errors.New("failed to create user")
 	}
 
-	// Send the email with the plain password (only after user is created)
-	if err = utils.SendEmail(user, plainPasswordForEmail); err != nil {
-		return uuid.UUID{}, err
+	// Send the plain password to the user's email
+	var emailSubject string
+	var emailBody string
+	emailSubject = "Welcome to UNO Service"
+	emailBody = fmt.Sprintf("Hello %s,\n\nYour account has been created. Your temporary password is: %s\n\nPlease change it after logging in.", user.Name, plainPasswordForEmail)
+
+	err = utils.CreateEmail(user.Email, emailSubject, emailBody)
+	if err != nil {
+		return user.ID, errors.New("user created but failed to send email")
 	}
 
 	return user.ID, nil
@@ -143,6 +151,10 @@ func (s *UserServiceImpl) GetUserByEmailAndPassword(ctx context.Context, email, 
 	}
 
 	return user, nil
+}
+
+func (s *UserServiceImpl) GetUserByEmail(ctx context.Context, email string) (*domain.User, error) {
+	return s.Repo.GetUserByEmail(ctx, email)
 }
 
 func (s *UserServiceImpl) GetRoutesAuthorization(ctx context.Context, tokenStr string, getRole *bool, getUserID *uuid.UUID) error {

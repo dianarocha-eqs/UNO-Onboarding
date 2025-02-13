@@ -19,8 +19,10 @@ type AuthRepository interface {
 	GetToken(ctx context.Context, tokenStr string) (*auth_domain.AuthToken, error)
 	// Sets token to false (invalid)
 	InvalidateToken(ctx context.Context, tokenStr string) error
+	// Stores new token for password recovery
+	StoreTokenToPasswordRecovery(ctx context.Context, auth *auth_domain.AuthToken) error
 	// Get user's password reset token
-	GetUserByPasswordResetToken(ctx context.Context, token string) (uuid.UUID, error)
+	GetUserByTokenToResetPassword(ctx context.Context, token string) (uuid.UUID, error)
 	// Delete token
 	DeteteToken(ctx context.Context, token string) error
 }
@@ -99,7 +101,24 @@ func (r *AuthRepositoryImpl) InvalidateToken(ctx context.Context, tokenStr strin
 	return nil
 }
 
-func (r *AuthRepositoryImpl) GetUserByPasswordResetToken(ctx context.Context, token string) (uuid.UUID, error) {
+func (r *AuthRepositoryImpl) StoreTokenToPasswordRecovery(ctx context.Context, auth *auth_domain.AuthToken) error {
+	query := `
+		INSERT INTO password_reset_tokens (user_id, token, is_valid)
+		VALUES (@user_id, @token, 1);
+	`
+
+	_, err := r.DB.ExecContext(ctx, query,
+		sql.Named("user_id", auth.UserID),
+		sql.Named("token", auth.Token),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to store token: %v", err)
+	}
+
+	return nil
+}
+
+func (r *AuthRepositoryImpl) GetUserByTokenToResetPassword(ctx context.Context, token string) (uuid.UUID, error) {
 	query := `
 		SELECT user_id
 		FROM password_reset_tokens
