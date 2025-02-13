@@ -13,6 +13,8 @@ import (
 type AuthHandler interface {
 	// Handles the HTTP request to login a user
 	Login(c *gin.Context)
+	// Handles the HTTP request to logout a user
+	Logout(c *gin.Context)
 }
 
 // Process HTTP requests and interaction with the AuthService and UserService for authentication operations
@@ -74,4 +76,22 @@ func (h *AuthHandlerImpl) Login(c *gin.Context) {
 			"picture": user.Picture,
 		},
 	})
+}
+
+func (h *AuthHandlerImpl) Logout(c *gin.Context) {
+	// Retrieve the token from context (set by middleware)
+	tokenStr, exists := c.Get("token")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "failed to retrieve token from authorization header"})
+		return
+	}
+
+	// Call service to invalidate the token
+	err := h.AuthService.InvalidateToken(c.Request.Context(), tokenStr.(string))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.Status(http.StatusOK)
 }

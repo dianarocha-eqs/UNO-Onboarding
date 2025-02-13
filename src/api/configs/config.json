@@ -7,10 +7,11 @@
       "name": "uno-onboarding"
     },
     "email": {
-      "from": "",
-      "password": "",
-      "host": "",
-      "port": 0
+      "from": "no-reply@eqsglobal.com",
+      "password": "03tds3x87d",
+      "host": "mail.eqsglobal.com",
+      "port": 465,
+      "security": "SSL/TLS"
   },
   "jwt_secret": "super-secret-key"
 }
