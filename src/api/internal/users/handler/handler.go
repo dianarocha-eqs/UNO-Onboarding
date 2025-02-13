@@ -21,8 +21,6 @@ type UserHandler interface {
 	EditUser(c *gin.Context)
 	//  Handles the HTTP request to list users
 	ListUsers(c *gin.Context)
-	// Handles the HTTP request to recover password
-	RecoverPassword(c *gin.Context)
 	// Handles the HTTP request to reset password
 	ResetPassword(c *gin.Context)
 }
@@ -44,11 +42,6 @@ type FilterSearchAndSort struct {
 type ResetPasswordRequest struct {
 	Token    string `json:"token"`
 	Password string `json:"password"`
-}
-
-// Structure request for recovery password
-type RecoverPasswordRequest struct {
-	Email string `json:"email"`
 }
 
 // Process HTTP requests and interaction with the UserService for user operations
@@ -179,56 +172,6 @@ func (h *UserHandlerImpl) ListUsers(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-func (h *UserHandlerImpl) RecoverPassword(c *gin.Context) {
-
-	var req RecoverPasswordRequest
-	var err error
-	if err = c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid email"})
-		return
-	}
-
-	var user *domain.User
-	user, err = h.UserService.GetUserByEmail(c.Request.Context(), req.Email)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to retrieve user by email"})
-		return
-	}
-
-	_, err = h.AuthService.AddTokenForPasswordRecovery(c.Request.Context(), user)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "failed to add token for password recovery"})
-		return
-	}
-
-	// GENERATES RANDOM PASSWORD FOR NOW
-	var newPassword string
-	newPassword, err = utils.GenerateRandomPassword(12)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate password"})
-		return
-	}
-
-	var emailSubject string
-	var emailBody string
-	// Email content
-	emailSubject = "Password Reset Request"
-	emailBody = fmt.Sprintf(
-		"Hello,\n\n. This is your new password: %s.",
-		newPassword,
-	)
-
-	// Send email
-	err = utils.CreateEmail(req.Email, emailSubject, emailBody)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to send new password to email"})
-		return
-	}
-
-	// Respond with success
-	c.Status(http.StatusOK)
-}
-
 func (h *UserHandlerImpl) ResetPassword(c *gin.Context) {
 
 	var req ResetPasswordRequest
@@ -254,6 +197,7 @@ func (h *UserHandlerImpl) ResetPassword(c *gin.Context) {
 		return
 	}
 
+	fmt.Println(hashedPassword)
 	err = h.UserService.UpdatePassword(c.Request.Context(), userID, hashedPassword)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update password"})

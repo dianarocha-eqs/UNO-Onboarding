@@ -48,6 +48,5 @@ func RegisterUsersRoutes(router *gin.Engine) {
 	// No authentication required
 	// Reset Password
 	recover.POST("change-password", h.ResetPassword)
-	recover.POST("forgot-password", h.RecoverPassword)
 
 }

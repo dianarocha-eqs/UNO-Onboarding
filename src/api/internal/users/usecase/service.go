@@ -24,8 +24,6 @@ type UserService interface {
 	ListUsers(ctx context.Context, search string, sortDirection int) ([]domain.User, error)
 	// Get user by email and password
 	GetUserByEmailAndPassword(ctx context.Context, email, password string) (*domain.User, error)
-	// Get user by email
-	GetUserByEmail(ctx context.Context, email string) (*domain.User, error)
 	// Checks user's role and uuid from token
 	GetRoutesAuthorization(ctx context.Context, tokenStr string, getRole *bool, getUserID *uuid.UUID) error
 	// Only update password
@@ -151,10 +149,6 @@ func (s *UserServiceImpl) GetUserByEmailAndPassword(ctx context.Context, email, 
 	}
 
 	return user, nil
-}
-
-func (s *UserServiceImpl) GetUserByEmail(ctx context.Context, email string) (*domain.User, error) {
-	return s.Repo.GetUserByEmail(ctx, email)
 }
 
 func (s *UserServiceImpl) GetRoutesAuthorization(ctx context.Context, tokenStr string, getRole *bool, getUserID *uuid.UUID) error {
