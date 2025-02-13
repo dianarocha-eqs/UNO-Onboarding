@@ -46,6 +46,8 @@ func RegisterUsersRoutes(router *gin.Engine) {
 
 	recover := router.Group("/v1/users/")
 	// No authentication required
+	// Recovery password
+	recover.POST("forgot-password", h.RecoverPassword)
 	// Reset Password
 	recover.POST("change-password", h.ResetPassword)
 

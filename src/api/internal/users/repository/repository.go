@@ -23,6 +23,8 @@ type UserRepository interface {
 	GetUserByEmailAndPassword(ctx context.Context, email, password string) (*domain.User, error)
 	// Checks user's role and uuid from token
 	GetRoutesAuthorization(ctx context.Context, tokenStr string, getRole *bool, getUserID *uuid.UUID) error
+	// Get user by email
+	GetUserByEmail(ctx context.Context, email string) (*domain.User, error)
 	// Only update password -> in tests only
 	UpdatePassword(ctx context.Context, userID uuid.UUID, password string) error
 }
@@ -173,6 +175,25 @@ func (r *UserRepositoryImpl) GetRoutesAuthorization(ctx context.Context, tokenSt
 	}
 
 	return nil
+}
+
+func (r *UserRepositoryImpl) GetUserByEmail(ctx context.Context, email string) (*domain.User, error) {
+	query := `
+		SELECT id, name, email, picture, phone, role
+		FROM Users
+		WHERE email = @email 
+	`
+	row := r.DB.QueryRowContext(ctx, query, sql.Named("email", email))
+	var user domain.User
+	err := row.Scan(&user.ID, &user.Name, &user.Email, &user.Picture, &user.Phone, &user.Role)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("invalid email")
+		}
+		return nil, fmt.Errorf("failed to retrieve user id: %v", err)
+	}
+
+	return &user, nil
 }
 
 func (r *UserRepositoryImpl) UpdatePassword(ctx context.Context, userID uuid.UUID, password string) error {
