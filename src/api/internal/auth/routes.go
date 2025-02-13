@@ -6,6 +6,7 @@ import (
 	auth_service "api/internal/auth/usecase"
 	user_repos "api/internal/users/repository"
 	user_service "api/internal/users/usecase"
+	middleware "api/utils"
 	"log"
 
 	"github.com/gin-contrib/cors"
@@ -36,5 +37,10 @@ func RegisterAuthRoutes(router *gin.Engine) {
 	auth := router.Group("/v1/auth")
 	{
 		auth.POST("/login", h.Login)
+	}
+	protect := router.Group("/v1/")
+	protect.Use(middleware.AuthMiddleware(authService))
+	{
+		protect.POST("/auth/logout", h.Logout)
 	}
 }

@@ -1,8 +1,10 @@
 package handler
 
 import (
+	auth_service "api/internal/auth/usecase"
 	"api/internal/users/domain"
-	"api/internal/users/usecase"
+	users_service "api/internal/users/usecase"
+	"api/utils"
 	"fmt"
 	"net/http"
 	"strings"
@@ -19,6 +21,10 @@ type UserHandler interface {
 	EditUser(c *gin.Context)
 	//  Handles the HTTP request to list users
 	ListUsers(c *gin.Context)
+	// Handles the HTTP request to recover password
+	RecoverPassword(c *gin.Context)
+	// Handles the HTTP request to reset password
+	ResetPassword(c *gin.Context)
 }
 
 // Structure response for list users
@@ -34,16 +40,46 @@ type FilterSearchAndSort struct {
 	Sort   int    `json:"sort"`
 }
 
-// Process HTTP requests and interaction with the UserService for user operations
-type UserHandlerImpl struct {
-	Service usecase.UserService
+// Structure request for reset password
+type ResetPasswordRequest struct {
+	Token    string `json:"token"`
+	Password string `json:"password"`
 }
 
-func NewUserHandler(service usecase.UserService) UserHandler {
-	return &UserHandlerImpl{Service: service}
+// Structure request for recovery password
+type RecoverPasswordRequest struct {
+	Email string `json:"email"`
+}
+
+// Process HTTP requests and interaction with the UserService for user operations
+type UserHandlerImpl struct {
+	UserService users_service.UserService
+	AuthService auth_service.AuthService
+}
+
+func NewUserHandler(authService auth_service.AuthService, userService users_service.UserService) UserHandler {
+	return &UserHandlerImpl{
+		AuthService: authService,
+		UserService: userService,
+	}
 }
 
 func (h *UserHandlerImpl) AddUser(c *gin.Context) {
+
+	// Gets token from header
+	tokenAuth, _ := c.Get("token")
+
+	// Gets role from header
+	roleAuth, _ := c.Get("role")
+
+	str := tokenAuth.(string)
+	var role bool
+	// Checks if the role from header is the same as the role given to the user
+	err := h.UserService.GetRoutesAuthorization(c.Request.Context(), str, &role, nil)
+	if err != nil || role != roleAuth {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "current user is not authorized to create a new user"})
+		return
+	}
 
 	var user domain.User
 	if err := c.ShouldBindJSON(&user); err != nil {
@@ -51,7 +87,7 @@ func (h *UserHandlerImpl) AddUser(c *gin.Context) {
 		return
 	}
 
-	ID, err := h.Service.CreateUser(c.Request.Context(), &user)
+	ID, err := h.UserService.CreateUser(c.Request.Context(), &user)
 	if err != nil {
 		// Check if it's a validation error (missing fields)
 		if strings.Contains(err.Error(), "required fields") || strings.Contains(err.Error(), "invalid email format") || strings.Contains(err.Error(), "invalid phone number format") {
@@ -66,8 +102,27 @@ func (h *UserHandlerImpl) AddUser(c *gin.Context) {
 }
 
 func (h *UserHandlerImpl) EditUser(c *gin.Context) {
-	var user domain.User
 
+	// Gets token from header
+	tokenStr, _ := c.Get("token")
+
+	// Gets role from header
+	roleAuth, _ := c.Get("role")
+
+	// Gets uuid from header
+	uuidAuth, _ := c.Get("uuid")
+
+	str := tokenStr.(string)
+	var role bool
+	var userID uuid.UUID
+	// Checks if the role or uuid from header is the same as the role and uuid given to/from the user
+	err := h.UserService.GetRoutesAuthorization(c.Request.Context(), str, &role, &userID)
+	if err != nil || role != roleAuth || userID != uuidAuth {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "current user is not authorized to edit this user"})
+		return
+	}
+
+	var user domain.User
 	// Bind JSON to user struct
 	if err := c.ShouldBindJSON(&user); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
@@ -75,9 +130,8 @@ func (h *UserHandlerImpl) EditUser(c *gin.Context) {
 	}
 
 	// Call UpdateUser service
-	err := h.Service.UpdateUser(c.Request.Context(), &user)
+	err = h.UserService.UpdateUser(c.Request.Context(), &user)
 	if err != nil {
-		fmt.Println(user)
 		// this looks weird but i don't know how different should it be
 		if strings.Contains(err.Error(), "name, email, and phone") {
 			c.JSON(http.StatusForbidden, gin.H{"message": err.Error()})
@@ -100,7 +154,7 @@ func (h *UserHandlerImpl) ListUsers(c *gin.Context) {
 	}
 
 	var users []domain.User
-	users, err = h.Service.ListUsers(c.Request.Context(), filter.Search, filter.Sort)
+	users, err = h.UserService.ListUsers(c.Request.Context(), filter.Search, filter.Sort)
 	if err != nil {
 		// Check specific errors for handling them
 		if strings.Contains(err.Error(), "invalid sort direction") || strings.Contains(err.Error(), "no result was found") {
@@ -123,4 +177,94 @@ func (h *UserHandlerImpl) ListUsers(c *gin.Context) {
 
 	// Return the users in the expected format
 	c.JSON(http.StatusOK, response)
+}
+
+func (h *UserHandlerImpl) RecoverPassword(c *gin.Context) {
+
+	var req RecoverPasswordRequest
+	var err error
+	if err = c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid email"})
+		return
+	}
+
+	var user *domain.User
+	user, err = h.UserService.GetUserByEmail(c.Request.Context(), req.Email)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to retrieve user by email"})
+		return
+	}
+
+	_, err = h.AuthService.AddTokenForPasswordRecovery(c.Request.Context(), user)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "failed to add token for password recovery"})
+		return
+	}
+
+	// GENERATES RANDOM PASSWORD FOR NOW
+	var newPassword string
+	newPassword, err = utils.GenerateRandomPassword(12)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate password"})
+		return
+	}
+
+	var emailSubject string
+	var emailBody string
+	// Email content
+	emailSubject = "Password Reset Request"
+	emailBody = fmt.Sprintf(
+		"Hello,\n\n. This is your new password: %s.",
+		newPassword,
+	)
+
+	// Send email
+	err = utils.CreateEmail(req.Email, emailSubject, emailBody)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to send new password to email"})
+		return
+	}
+
+	// Respond with success
+	c.Status(http.StatusOK)
+}
+
+func (h *UserHandlerImpl) ResetPassword(c *gin.Context) {
+
+	var req ResetPasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid token or password"})
+		return
+	}
+
+	var userID uuid.UUID
+	var err error
+	// Fetch user id by token to check the validation state and proceed
+	userID, err = h.AuthService.GetUserByTokenToResetPassword(c.Request.Context(), req.Token)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "failed to get user by token to reset password"})
+		return
+	}
+
+	var hashedPassword string
+	// hash the password received to store in database (never plain password)
+	_, hashedPassword, err = utils.GeneratePasswordHash(req.Password)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to hash password"})
+		return
+	}
+
+	fmt.Println(hashedPassword)
+	err = h.UserService.UpdatePassword(c.Request.Context(), userID, hashedPassword)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update password"})
+		return
+	}
+
+	if err = h.AuthService.DeleteToken(c.Request.Context(), req.Token); err != nil {
+		// just a print in order to warn, but still does reset password
+		fmt.Printf("Warning: Failed to delete token: %v\n", err)
+	}
+
+	c.Status(http.StatusOK)
 }

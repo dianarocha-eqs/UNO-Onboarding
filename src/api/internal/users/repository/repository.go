@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	_ "github.com/denisenkom/go-mssqldb" // Import SQL Server driver
+	uuid "github.com/tentone/mssql-uuid"
 )
 
 // Interface for user's data operations
@@ -20,6 +21,12 @@ type UserRepository interface {
 	ListUsers(ctx context.Context, search string, sortDirection int) ([]domain.User, error)
 	// Get user by email and password
 	GetUserByEmailAndPassword(ctx context.Context, email, password string) (*domain.User, error)
+	// Checks user's role and uuid from token
+	GetRoutesAuthorization(ctx context.Context, tokenStr string, getRole *bool, getUserID *uuid.UUID) error
+	// Get user by email
+	GetUserByEmail(ctx context.Context, email string) (*domain.User, error)
+	// Only update password -> in tests only
+	UpdatePassword(ctx context.Context, userID uuid.UUID, password string) error
 }
 
 // Performs user's data operations using GORM to interact with the database
@@ -125,9 +132,7 @@ func (r *UserRepositoryImpl) GetUserByEmailAndPassword(ctx context.Context, emai
 		FROM Users
 		WHERE email = @email AND password = @password
 	`
-
 	row := r.DB.QueryRowContext(ctx, query, sql.Named("email", email), sql.Named("password", password))
-
 	var user domain.User
 	err := row.Scan(&user.ID, &user.Name, &user.Email, &user.Picture, &user.Phone, &user.Role)
 	if err != nil {
@@ -138,4 +143,73 @@ func (r *UserRepositoryImpl) GetUserByEmailAndPassword(ctx context.Context, emai
 	}
 
 	return &user, nil
+}
+
+func (r *UserRepositoryImpl) GetRoutesAuthorization(ctx context.Context, tokenStr string, getRole *bool, getUserID *uuid.UUID) error {
+	query := `
+		SELECT users.role, users.id
+		FROM users
+		INNER JOIN user_tokens
+		ON user_tokens.user_id = users.id
+		WHERE user_tokens.token = @token
+	`
+
+	var role bool
+	var userid uuid.UUID
+	row := r.DB.QueryRowContext(ctx, query, sql.Named("token", tokenStr))
+	// Scan the result for role and uuid
+	err := row.Scan(&role, &userid)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return fmt.Errorf("token not found")
+		}
+		return fmt.Errorf("failed to retrieve role and user id: %v", err)
+	}
+
+	// Assign only if the caller wants these values
+	if getRole != nil {
+		*getRole = role
+	}
+	if getUserID != nil {
+		*getUserID = userid
+	}
+
+	return nil
+}
+
+func (r *UserRepositoryImpl) GetUserByEmail(ctx context.Context, email string) (*domain.User, error) {
+	query := `
+		SELECT id, name, email, picture, phone, role
+		FROM Users
+		WHERE email = @email 
+	`
+	row := r.DB.QueryRowContext(ctx, query, sql.Named("email", email))
+	var user domain.User
+	err := row.Scan(&user.ID, &user.Name, &user.Email, &user.Picture, &user.Phone, &user.Role)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("invalid email")
+		}
+		return nil, fmt.Errorf("failed to retrieve user id: %v", err)
+	}
+
+	return &user, nil
+}
+
+func (r *UserRepositoryImpl) UpdatePassword(ctx context.Context, userID uuid.UUID, password string) error {
+	query := `
+		UPDATE Users
+		SET 
+			password = @password
+		WHERE id = @id
+	`
+
+	_, err := r.DB.ExecContext(ctx, query,
+		sql.Named("password", password),
+		sql.Named("id", userID),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to update user's password: %v", err)
+	}
+	return nil
 }
