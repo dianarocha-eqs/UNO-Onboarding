@@ -24,6 +24,7 @@ func AdminOnly() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
+		c.Set("role", role)
 		c.Next()
 	}
 }
@@ -89,6 +90,8 @@ func AdminAndUserItself() gin.HandlerFunc {
 
 		// Allow access if the user is an admin or the UUID matches
 		if role == user_domain.ROLE_ADMIN || userUUID == requestBody.UUID {
+			c.Set("role", role)
+			c.Set("uuid", userUUID)
 			c.Next()
 		} else {
 			c.JSON(http.StatusForbidden, gin.H{"error": "access forbidden"})
@@ -109,7 +112,6 @@ func AuthMiddleware(authService auth_service.AuthService) gin.HandlerFunc {
 		}
 
 		var tokenStr string
-
 		tokenStr = authHeader
 
 		// Validate the token using the service

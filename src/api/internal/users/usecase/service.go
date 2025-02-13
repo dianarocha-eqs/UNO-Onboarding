@@ -24,6 +24,10 @@ type UserService interface {
 	ListUsers(ctx context.Context, search string, sortDirection int) ([]domain.User, error)
 	// Get user by email and password
 	GetUserByEmailAndPassword(ctx context.Context, email, password string) (*domain.User, error)
+	// Checks user's role and uuid from token
+	GetRoutesAuthorization(ctx context.Context, tokenStr string, getRole *bool, getUserID *uuid.UUID) error
+	// Only update password
+	UpdatePassword(ctx context.Context, userID uuid.UUID, password string) error
 }
 
 // Handles user's logic and interaction with the repository
@@ -37,7 +41,6 @@ func NewUserService(repo repository.UserRepository) UserService {
 
 // Checks the required fields and their format
 func validateRequiredFields(user *domain.User) error {
-
 	// trim spaces for required fields only
 	user.Name = strings.Join(strings.Fields(user.Name), " ")
 	user.Email = strings.Join(strings.Fields(user.Email), " ")
@@ -66,9 +69,9 @@ func (s *UserServiceImpl) CreateUser(ctx context.Context, user *domain.User) (uu
 		return uuid.NilUUID, err
 	}
 
-	// Create the password (and hash it)
+	// Create the hashed password
 	var plainPasswordForEmail string
-	plainPasswordForEmail, err = utils.CreatePassword(user, "")
+	plainPasswordForEmail, user.Password, err = utils.GeneratePasswordHash("")
 	if err != nil {
 		return uuid.NilUUID, err
 	}
@@ -79,9 +82,15 @@ func (s *UserServiceImpl) CreateUser(ctx context.Context, user *domain.User) (uu
 		return uuid.NilUUID, errors.New("failed to create user")
 	}
 
-	// Send the email with the plain password (only after user is created)
-	if err = utils.SendEmail(user, plainPasswordForEmail); err != nil {
-		return uuid.UUID{}, err
+	// Send the plain password to the user's email
+	var emailSubject string
+	var emailBody string
+	emailSubject = "Welcome to UNO Service"
+	emailBody = fmt.Sprintf("Hello %s,\n\nYour account has been created. Your temporary password is: %s\n\nPlease change it after logging in.", user.Name, plainPasswordForEmail)
+
+	err = utils.CreateEmail(user.Email, emailSubject, emailBody)
+	if err != nil {
+		return user.ID, errors.New("user created but failed to send email")
 	}
 
 	return user.ID, nil
@@ -114,7 +123,6 @@ func (s *UserServiceImpl) UpdateUser(ctx context.Context, user *domain.User) err
 }
 
 func (s *UserServiceImpl) ListUsers(ctx context.Context, search string, sortDirection int) ([]domain.User, error) {
-
 	if sortDirection != 1 && sortDirection != -1 && sortDirection != 0 {
 		return nil, errors.New("invalid sort direction: must be 1 (ASC) or -1 (DESC) or 0 (NO ORDER)")
 	}
@@ -135,11 +143,18 @@ func (s *UserServiceImpl) ListUsers(ctx context.Context, search string, sortDire
 }
 
 func (s *UserServiceImpl) GetUserByEmailAndPassword(ctx context.Context, email, password string) (*domain.User, error) {
-
 	user, err := s.Repo.GetUserByEmailAndPassword(ctx, email, password)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve user: %v", err)
 	}
 
 	return user, nil
+}
+
+func (s *UserServiceImpl) GetRoutesAuthorization(ctx context.Context, tokenStr string, getRole *bool, getUserID *uuid.UUID) error {
+	return s.Repo.GetRoutesAuthorization(ctx, tokenStr, getRole, getUserID)
+}
+
+func (s *UserServiceImpl) UpdatePassword(ctx context.Context, userID uuid.UUID, password string) error {
+	return s.Repo.UpdatePassword(ctx, userID, password)
 }
