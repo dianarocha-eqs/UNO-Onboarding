@@ -45,21 +45,22 @@ func NewUserHandler(service usecase.UserService) UserHandler {
 
 func (h *UserHandlerImpl) AddUser(c *gin.Context) {
 
-	var user domain.User
+	// Gets token from header
+	tokenAuth, _ := c.Get("token")
 
-	tokenStr, exists := c.Get("token")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "failed to retrieve token set on authorization header"})
-		return
-	}
+	// Gets role from header
+	roleAuth, _ := c.Get("role")
 
-	str := tokenStr.(string)
-	role, _, err := h.Service.GetRoutesAuthorization(c.Request.Context(), str)
-	if err != nil || role != domain.ROLE_ADMIN {
+	str := tokenAuth.(string)
+	var role bool
+	// Checks if the role from header is the same as the role given to the user
+	err := h.Service.GetRoutesAuthorization(c.Request.Context(), str, &role, nil)
+	if err != nil || role != roleAuth {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "current user is not authorized to create a new user"})
 		return
 	}
 
+	var user domain.User
 	if err := c.ShouldBindJSON(&user); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -81,21 +82,26 @@ func (h *UserHandlerImpl) AddUser(c *gin.Context) {
 
 func (h *UserHandlerImpl) EditUser(c *gin.Context) {
 
-	var user domain.User
+	// Gets token from header
+	tokenStr, _ := c.Get("token")
 
-	tokenStr, exists := c.Get("token")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "failed to retrieve token set on authorization header"})
-		return
-	}
+	// Gets role from header
+	roleAuth, _ := c.Get("role")
+
+	// Gets uuid from header
+	uuidAuth, _ := c.Get("uuid")
 
 	str := tokenStr.(string)
-	role, user_id, err := h.Service.GetRoutesAuthorization(c.Request.Context(), str)
-	if err != nil || role != domain.ROLE_ADMIN || user_id != user.ID {
+	var role bool
+	var userID uuid.UUID
+	// Checks if the role or uuid from header is the same as the role and uuid given to/from the user
+	err := h.Service.GetRoutesAuthorization(c.Request.Context(), str, &role, &userID)
+	if err != nil || role != roleAuth || userID != uuidAuth {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "current user is not authorized to edit this user"})
 		return
 	}
 
+	var user domain.User
 	// Bind JSON to user struct
 	if err := c.ShouldBindJSON(&user); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})

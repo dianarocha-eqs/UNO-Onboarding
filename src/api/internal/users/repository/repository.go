@@ -22,7 +22,7 @@ type UserRepository interface {
 	// Get user by email and password
 	GetUserByEmailAndPassword(ctx context.Context, email, password string) (*domain.User, error)
 	// Checks user's role and uuid from token
-	GetRoutesAuthorization(ctx context.Context, tokenStr string) (bool, uuid.UUID, error)
+	GetRoutesAuthorization(ctx context.Context, tokenStr string, getRole *bool, getUserID *uuid.UUID) error
 }
 
 // Performs user's data operations using GORM to interact with the database
@@ -143,7 +143,7 @@ func (r *UserRepositoryImpl) GetUserByEmailAndPassword(ctx context.Context, emai
 	return &user, nil
 }
 
-func (r *UserRepositoryImpl) GetRoutesAuthorization(ctx context.Context, tokenStr string) (bool, uuid.UUID, error) {
+func (r *UserRepositoryImpl) GetRoutesAuthorization(ctx context.Context, tokenStr string, getRole *bool, getUserID *uuid.UUID) error {
 	query := `
 		SELECT users.role, users.id
 		FROM users
@@ -159,10 +159,18 @@ func (r *UserRepositoryImpl) GetRoutesAuthorization(ctx context.Context, tokenSt
 	err := row.Scan(&role, &userid)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return false, uuid.NilUUID, fmt.Errorf("token not found")
+			return fmt.Errorf("token not found")
 		}
-		return false, uuid.NilUUID, fmt.Errorf("failed to retrieve role and user id: %v", err)
+		return fmt.Errorf("failed to retrieve role and user id: %v", err)
 	}
 
-	return role, userid, nil
+	// Assign only if the caller wants these values
+	if getRole != nil {
+		*getRole = role
+	}
+	if getUserID != nil {
+		*getUserID = userid
+	}
+
+	return nil
 }
