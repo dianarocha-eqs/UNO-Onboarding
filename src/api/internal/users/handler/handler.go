@@ -5,6 +5,7 @@ import (
 	"api/internal/users/domain"
 	users_service "api/internal/users/usecase"
 	"api/utils"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -173,48 +174,35 @@ func (h *UserHandlerImpl) ListUsers(c *gin.Context) {
 
 func (h *UserHandlerImpl) ResetPassword(c *gin.Context) {
 
-	// Gets token from header
-	tokenStr, _ := c.Get("token")
-
-	// Gets uuid from header
-	uuidAuth, _ := c.Get("uuid")
-
-	str := tokenStr.(string)
-	var userID uuid.UUID
-	// Checks if the uuid from header is the same as the uuid from the user
-	err := h.UserService.GetRoutesAuthorization(c.Request.Context(), str, nil, &userID)
-	if err != nil || userID != uuidAuth {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "current user is not authorized to change password for this user"})
-		return
-	}
-
 	var req ResetPasswordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid token or password"})
 		return
 	}
 
-	if tokenStr != req.Token {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
-		return
-	}
-
+	var userID uuid.UUID
+	var err error
 	// Fetch user by token
-	userID, err = h.AuthService.GetUserByToken(c.Request.Context(), req.Token)
+	userID, err = h.AuthService.GetUserByPasswordResetToken(c.Request.Context(), req.Token)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "failed to get user by token to reset password"})
 		return
 	}
 
 	_, hashedPassword, err := utils.GeneratePasswordHash(req.Password)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate password hash"})
+		return
 	}
 
 	err = h.UserService.UpdatePassword(c.Request.Context(), userID, hashedPassword)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update password"})
 		return
+	}
+
+	if err = h.AuthService.DeleteToken(c.Request.Context(), req.Token); err != nil {
+		fmt.Printf("Warning: Failed to delete token: %v\n", err)
 	}
 
 	c.Status(http.StatusOK)

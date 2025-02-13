@@ -19,8 +19,10 @@ type AuthRepository interface {
 	GetToken(ctx context.Context, tokenStr string) (*auth_domain.AuthToken, error)
 	// Sets token to false (invalid)
 	InvalidateToken(ctx context.Context, tokenStr string) error
-	// Gets the user by token
-	GetUserByToken(ctx context.Context, token string) (uuid.UUID, error)
+	// Get user's password reset token
+	GetUserByPasswordResetToken(ctx context.Context, token string) (uuid.UUID, error)
+	//
+	DeteteToken(ctx context.Context, token string) error
 }
 
 // GORM to interact with the token's database
@@ -74,7 +76,7 @@ func (r *AuthRepositoryImpl) GetToken(ctx context.Context, tokenStr string) (*au
 	err := row.Scan(&authToken.UserID, &authToken.Token, &authToken.IsValid)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("token not found")
+			return nil, fmt.Errorf("invalid or expired token")
 		}
 		return nil, fmt.Errorf("failed to retrieve token: %v", err)
 	}
@@ -97,26 +99,33 @@ func (r *AuthRepositoryImpl) InvalidateToken(ctx context.Context, tokenStr strin
 	return nil
 }
 
-func (r *AuthRepositoryImpl) GetUserByToken(ctx context.Context, token string) (uuid.UUID, error) {
+func (r *AuthRepositoryImpl) GetUserByPasswordResetToken(ctx context.Context, token string) (uuid.UUID, error) {
 	query := `
-		SELECT users.id
-		FROM user_tokens
-		INNER JOIN users
-		ON user_tokens.user_id = users.id
-		WHERE user_tokens.token = @token
+		SELECT user_id
+		FROM password_reset_tokens
+		WHERE token = @token
 	`
 
-	var userid uuid.UUID
-	row := r.DB.QueryRowContext(ctx, query,
-		sql.Named("token", token),
-	)
-	err := row.Scan(&userid)
+	var userID uuid.UUID
+	row := r.DB.QueryRowContext(ctx, query, sql.Named("token", token))
+	err := row.Scan(&userID)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return uuid.NilUUID, fmt.Errorf("no user with this token")
+			return uuid.NilUUID, fmt.Errorf("invalid or expired token")
 		}
 		return uuid.NilUUID, fmt.Errorf("failed to retrieve user: %v", err)
 	}
 
-	return userid, nil
+	return userID, nil
+}
+
+func (r *AuthRepositoryImpl) DeteteToken(ctx context.Context, token string) error {
+
+	deleteQuery := `
+		DELETE FROM password_reset_tokens
+		WHERE token = @token
+	`
+	_, _ = r.DB.ExecContext(ctx, deleteQuery, sql.Named("token", token))
+
+	return nil
 }

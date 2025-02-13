@@ -128,22 +128,3 @@ func AuthMiddleware(authService auth_service.AuthService) gin.HandlerFunc {
 		c.Next()
 	}
 }
-
-func UserAcess() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		// only sets the uuid from the user
-		userUUIDStr := c.GetHeader("uuid")
-
-		var userUUID uuid.UUID
-		var err error
-		userUUID, err = uuid.FromString(userUUIDStr)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid UUID format in header"})
-			c.Abort()
-			return
-		}
-
-		c.Set("uuid", userUUID)
-		c.Next()
-	}
-}

@@ -26,7 +26,7 @@ type UserService interface {
 	GetUserByEmailAndPassword(ctx context.Context, email, password string) (*domain.User, error)
 	// Checks user's role and uuid from token
 	GetRoutesAuthorization(ctx context.Context, tokenStr string, getRole *bool, getUserID *uuid.UUID) error
-	// Only update password -> in tests only
+	// Only update password
 	UpdatePassword(ctx context.Context, userID uuid.UUID, password string) error
 }
 

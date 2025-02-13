@@ -42,7 +42,11 @@ func RegisterUsersRoutes(router *gin.Engine) {
 		api.POST("edit", utils.AdminAndUserItself(), h.EditUser)
 		// List Users
 		api.POST("list", h.ListUsers)
-		// Reset Password
-		api.POST("/change-password", utils.UserAcess(), h.ResetPassword)
 	}
+
+	recover := router.Group("/v1/users/")
+	// No authentication required
+	// Reset Password
+	recover.POST("/v1/users/change-password", h.ResetPassword)
+
 }

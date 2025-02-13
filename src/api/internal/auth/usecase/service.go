@@ -20,8 +20,10 @@ type AuthService interface {
 	InvalidateToken(ctx context.Context, tokenStr string) error
 	// Checks the state of token
 	IsTokenValid(ctx context.Context, tokenStr string) (bool, error)
-	// Gets the user by token
-	GetUserByToken(ctx context.Context, token string) (uuid.UUID, error)
+	// Get user's password reset token
+	GetUserByPasswordResetToken(ctx context.Context, token string) (uuid.UUID, error)
+	// Delete token
+	DeleteToken(ctx context.Context, token string) error
 }
 
 type AuthServiceImpl struct {
@@ -91,10 +93,18 @@ func (s *AuthServiceImpl) IsTokenValid(ctx context.Context, tokenStr string) (bo
 	return authToken.IsValid, nil
 }
 
-func (s *AuthServiceImpl) GetUserByToken(ctx context.Context, token string) (uuid.UUID, error) {
-	userID, err := s.AuthRepo.GetUserByToken(ctx, token)
+func (s *AuthServiceImpl) GetUserByPasswordResetToken(ctx context.Context, token string) (uuid.UUID, error) {
+	userID, err := s.AuthRepo.GetUserByPasswordResetToken(ctx, token)
 	if err != nil {
 		return uuid.NilUUID, fmt.Errorf("failed to get user by token: %v", err)
 	}
 	return userID, nil
+}
+
+func (s *AuthServiceImpl) DeleteToken(ctx context.Context, token string) error {
+	err := s.AuthRepo.DeteteToken(ctx, token)
+	if err != nil {
+		return fmt.Errorf("failed to delete token")
+	}
+	return nil
 }
