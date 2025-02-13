@@ -15,7 +15,6 @@ const (
 	TEMPERATURE string = "Temperature"
 	HUMIDITY    string = "Humidity"
 	PRESSURE    string = "Pressure"
-	LIGHT       string = "Light"
 
 	// Predefined colors constants
 	RED    string = "Red"
