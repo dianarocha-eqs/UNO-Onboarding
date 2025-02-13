@@ -21,7 +21,7 @@ type AuthRepository interface {
 	InvalidateToken(ctx context.Context, tokenStr string) error
 	// Get user's password reset token
 	GetUserByPasswordResetToken(ctx context.Context, token string) (uuid.UUID, error)
-	//
+	// Delete token
 	DeteteToken(ctx context.Context, token string) error
 }
 

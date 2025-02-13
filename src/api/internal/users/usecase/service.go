@@ -150,12 +150,5 @@ func (s *UserServiceImpl) GetRoutesAuthorization(ctx context.Context, tokenStr s
 }
 
 func (s *UserServiceImpl) UpdatePassword(ctx context.Context, userID uuid.UUID, password string) error {
-
-	var err error
-	err = s.Repo.UpdatePassword(ctx, userID, password)
-	if err != nil {
-		return fmt.Errorf("failed to update password for user with id %s: %v", userID, err)
-	}
-
-	return nil
+	return s.Repo.UpdatePassword(ctx, userID, password)
 }
