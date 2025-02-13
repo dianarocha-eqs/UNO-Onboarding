@@ -1,9 +1,11 @@
 package routes
 
 import (
-	"api/internal/users/handler"
-	"api/internal/users/repository"
-	"api/internal/users/usecase"
+	auth_repository "api/internal/auth/repository"
+	auth_service "api/internal/auth/usecase"
+	users_handler "api/internal/users/handler"
+	users_repository "api/internal/users/repository"
+	users_service "api/internal/users/usecase"
 	"api/utils"
 
 	"log"
@@ -15,16 +17,24 @@ import (
 // Declares the routes that can be accessed for users management.
 func RegisterUsersRoutes(router *gin.Engine) {
 
-	repos, err := repository.NewUserRepository()
+	authRepo, err := auth_repository.NewAuthRepository()
+	if err != nil {
+		log.Fatalf("Failed to create auth repository: %v", err)
+	}
+
+	usersRepos, err := users_repository.NewUserRepository()
 	if err != nil {
 		log.Fatalf("Failed to create repository: %v", err)
 	}
-	service := usecase.NewUserService(repos)
-	h := handler.NewUserHandler(service)
+	userService := users_service.NewUserService(usersRepos)
+	authService := auth_service.NewAuthService(authRepo, usersRepos)
+
+	h := users_handler.NewUserHandler(authService, userService)
 
 	router.Use(cors.Default())
 	// User routes
 	api := router.Group("/v1/users/")
+	api.Use(utils.AuthMiddleware(authService))
 	{
 		// Create User (if admin)
 		api.POST("create", utils.AdminOnly(), h.AddUser)
@@ -32,5 +42,7 @@ func RegisterUsersRoutes(router *gin.Engine) {
 		api.POST("edit", utils.AdminAndUserItself(), h.EditUser)
 		// List Users
 		api.POST("list", h.ListUsers)
+		// Reset Password
+		api.POST("/change-password", utils.UserAcess(), h.ResetPassword)
 	}
 }

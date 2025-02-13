@@ -21,6 +21,8 @@ type UserRepository interface {
 	ListUsers(ctx context.Context, search string, sortDirection int) ([]domain.User, error)
 	// Get user by email and password
 	GetUserByEmailAndPassword(ctx context.Context, email, password string) (*domain.User, error)
+	// Checks user's role and uuid from token
+	GetRoutesAuthorization(ctx context.Context, tokenStr string, getRole *bool, getUserID *uuid.UUID) error
 	// Only update password -> in tests only
 	UpdatePassword(ctx context.Context, userID uuid.UUID, password string) error
 }
@@ -68,7 +70,7 @@ func (r *UserRepositoryImpl) UpdateUser(ctx context.Context, user *domain.User) 
 			name = COALESCE(NULLIF(@name, ''), name),
 			email = COALESCE(NULLIF(@email, ''), email),
 			phone = COALESCE(NULLIF(@phone, ''), phone),
-			picture = NULLIF(@picture, ''),
+			picture = @picture,
 			password = COALESCE(NULLIF(@password, ''), password)
 		WHERE id = @id
 	`
@@ -139,6 +141,38 @@ func (r *UserRepositoryImpl) GetUserByEmailAndPassword(ctx context.Context, emai
 	}
 
 	return &user, nil
+}
+
+func (r *UserRepositoryImpl) GetRoutesAuthorization(ctx context.Context, tokenStr string, getRole *bool, getUserID *uuid.UUID) error {
+	query := `
+		SELECT users.role, users.id
+		FROM users
+		INNER JOIN user_tokens
+		ON user_tokens.user_id = users.id
+		WHERE user_tokens.token = @token
+	`
+
+	var role bool
+	var userid uuid.UUID
+	row := r.DB.QueryRowContext(ctx, query, sql.Named("token", tokenStr))
+	// Scan the result for role and uuid
+	err := row.Scan(&role, &userid)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return fmt.Errorf("token not found")
+		}
+		return fmt.Errorf("failed to retrieve role and user id: %v", err)
+	}
+
+	// Assign only if the caller wants these values
+	if getRole != nil {
+		*getRole = role
+	}
+	if getUserID != nil {
+		*getUserID = userid
+	}
+
+	return nil
 }
 
 func (r *UserRepositoryImpl) UpdatePassword(ctx context.Context, userID uuid.UUID, password string) error {

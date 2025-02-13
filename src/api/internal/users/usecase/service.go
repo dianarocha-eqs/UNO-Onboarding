@@ -24,6 +24,8 @@ type UserService interface {
 	ListUsers(ctx context.Context, search string, sortDirection int) ([]domain.User, error)
 	// Get user by email and password
 	GetUserByEmailAndPassword(ctx context.Context, email, password string) (*domain.User, error)
+	// Checks user's role and uuid from token
+	GetRoutesAuthorization(ctx context.Context, tokenStr string, getRole *bool, getUserID *uuid.UUID) error
 	// Only update password -> in tests only
 	UpdatePassword(ctx context.Context, userID uuid.UUID, password string) error
 }
@@ -39,7 +41,6 @@ func NewUserService(repo repository.UserRepository) UserService {
 
 // Checks the required fields and their format
 func validateRequiredFields(user *domain.User) error {
-
 	// trim spaces for required fields only
 	user.Name = strings.Join(strings.Fields(user.Name), " ")
 	user.Email = strings.Join(strings.Fields(user.Email), " ")
@@ -70,13 +71,10 @@ func (s *UserServiceImpl) CreateUser(ctx context.Context, user *domain.User) (uu
 
 	// Create the hashed password
 	var plainPasswordForEmail string
-	var hashedPassword string
-	plainPasswordForEmail, hashedPassword, err = utils.GeneratePasswordHash("")
+	plainPasswordForEmail, user.Password, err = utils.GeneratePasswordHash("")
 	if err != nil {
 		return uuid.NilUUID, err
 	}
-
-	user.Password = hashedPassword
 
 	user.ID = uuid.NewV4()
 	err = s.Repo.CreateUser(ctx, user)
@@ -119,7 +117,6 @@ func (s *UserServiceImpl) UpdateUser(ctx context.Context, user *domain.User) err
 }
 
 func (s *UserServiceImpl) ListUsers(ctx context.Context, search string, sortDirection int) ([]domain.User, error) {
-
 	if sortDirection != 1 && sortDirection != -1 && sortDirection != 0 {
 		return nil, errors.New("invalid sort direction: must be 1 (ASC) or -1 (DESC) or 0 (NO ORDER)")
 	}
@@ -146,6 +143,10 @@ func (s *UserServiceImpl) GetUserByEmailAndPassword(ctx context.Context, email, 
 	}
 
 	return user, nil
+}
+
+func (s *UserServiceImpl) GetRoutesAuthorization(ctx context.Context, tokenStr string, getRole *bool, getUserID *uuid.UUID) error {
+	return s.Repo.GetRoutesAuthorization(ctx, tokenStr, getRole, getUserID)
 }
 
 func (s *UserServiceImpl) UpdatePassword(ctx context.Context, userID uuid.UUID, password string) error {
