@@ -39,6 +39,6 @@ type Sensor struct {
 	Visibility bool `json:"visibility" gorm:"column:visibility;type:bit;default:0"`
 	// UUID of the user who owns the sensor
 	SensorOwner uuid.UUID `json:"sensor_owner" gorm:"column:sensor_owner;type:uniqueidentifier;not null"`
-	// This field establishes a relationship between AuthToken and User using the foreign key
+	// This field establishes a relationship between Sensor and User using the foreign key
 	User domain.User `json:"user" gorm:"foreignKey:SensorOwner;references:ID;constraint:OnDelete:CASCADE"`
 }
