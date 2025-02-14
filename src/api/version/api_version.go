@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-const apiVersion = "0.0.0"
+const apiVersion = "1.0.0"
 
 // Returns the API version and timestamp in ISO 8601 format
 func GetVersion(c *gin.Context) {
