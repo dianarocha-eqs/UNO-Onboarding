@@ -23,6 +23,8 @@ type UserRepository interface {
 	GetUserByEmailAndPassword(ctx context.Context, email, password string) (*domain.User, error)
 	// Checks user's role and uuid from token
 	GetRoutesAuthorization(ctx context.Context, tokenStr string, getRole *bool, getUserID *uuid.UUID) error
+	// Updates user's password
+	UpdatePassword(ctx context.Context, userID uuid.UUID, password string) error
 }
 
 // Performs user's data operations using GORM to interact with the database
@@ -128,9 +130,7 @@ func (r *UserRepositoryImpl) GetUserByEmailAndPassword(ctx context.Context, emai
 		FROM User
 		WHERE email = @email AND password = @password
 	`
-
 	row := r.DB.QueryRowContext(ctx, query, sql.Named("email", email), sql.Named("password", password))
-
 	var user domain.User
 	err := row.Scan(&user.ID, &user.Name, &user.Email, &user.Picture, &user.Phone, &user.Role)
 	if err != nil {
@@ -172,5 +172,23 @@ func (r *UserRepositoryImpl) GetRoutesAuthorization(ctx context.Context, tokenSt
 		*getUserID = userid
 	}
 
+	return nil
+}
+
+func (r *UserRepositoryImpl) UpdatePassword(ctx context.Context, userID uuid.UUID, password string) error {
+	query := `
+		UPDATE Users
+		SET 
+			password = @password
+		WHERE id = @id
+	`
+
+	_, err := r.DB.ExecContext(ctx, query,
+		sql.Named("password", password),
+		sql.Named("id", userID),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to update user's password: %v", err)
+	}
 	return nil
 }

@@ -29,7 +29,7 @@ func RegisterUsersRoutes(router *gin.Engine) {
 	userService := users_service.NewUserService(usersRepos)
 	authService := auth_service.NewAuthService(authRepo, usersRepos)
 
-	h := users_handler.NewUserHandler(userService)
+	h := users_handler.NewUserHandler(authService, userService)
 
 	router.Use(cors.Default())
 	// User routes
@@ -43,4 +43,10 @@ func RegisterUsersRoutes(router *gin.Engine) {
 		// List Users
 		api.POST("list", h.ListUsers)
 	}
+
+	recover := router.Group("/v1/users/")
+	// No authentication required
+	// Reset Password
+	recover.POST("change-password", h.ResetPassword)
+
 }

@@ -26,6 +26,8 @@ type UserService interface {
 	GetUserByEmailAndPassword(ctx context.Context, email, password string) (*domain.User, error)
 	// Checks user's role and uuid from token
 	GetRoutesAuthorization(ctx context.Context, tokenStr string, getRole *bool, getUserID *uuid.UUID) error
+	// Updates user's password
+	UpdatePassword(ctx context.Context, userID uuid.UUID, password string) error
 }
 
 // Handles user's logic and interaction with the repository
@@ -67,9 +69,9 @@ func (s *UserServiceImpl) CreateUser(ctx context.Context, user *domain.User) (uu
 		return uuid.NilUUID, err
 	}
 
-	// Create the password (and hash it)
+	// Create the hashed password
 	var plainPasswordForEmail string
-	plainPasswordForEmail, err = utils.CreatePassword(user, "")
+	plainPasswordForEmail, user.Password, err = utils.GeneratePasswordHash("")
 	if err != nil {
 		return uuid.NilUUID, err
 	}
@@ -80,9 +82,15 @@ func (s *UserServiceImpl) CreateUser(ctx context.Context, user *domain.User) (uu
 		return uuid.NilUUID, errors.New("failed to create user")
 	}
 
-	// Send the email with the plain password (only after user is created)
-	if err = utils.SendEmail(user, plainPasswordForEmail); err != nil {
-		return uuid.UUID{}, err
+	// Send the plain password to the user's email
+	var emailSubject string
+	var emailBody string
+	emailSubject = "Welcome to UNO Service"
+	emailBody = fmt.Sprintf("Hello %s,\n\nYour account has been created. Your temporary password is: %s\n\nPlease change it after logging in.", user.Name, plainPasswordForEmail)
+
+	err = utils.CreateEmail(user.Email, emailSubject, emailBody)
+	if err != nil {
+		return user.ID, errors.New("user created but failed to send email")
 	}
 
 	return user.ID, nil
@@ -144,5 +152,17 @@ func (s *UserServiceImpl) GetUserByEmailAndPassword(ctx context.Context, email, 
 }
 
 func (s *UserServiceImpl) GetRoutesAuthorization(ctx context.Context, tokenStr string, getRole *bool, getUserID *uuid.UUID) error {
-	return s.Repo.GetRoutesAuthorization(ctx, tokenStr, getRole, getUserID)
+	err := s.Repo.GetRoutesAuthorization(ctx, tokenStr, getRole, getUserID)
+	if err != nil {
+		return fmt.Errorf("failed to retrieve user id: %v", err)
+	}
+	return err
+}
+
+func (s *UserServiceImpl) UpdatePassword(ctx context.Context, userID uuid.UUID, password string) error {
+	err := s.Repo.UpdatePassword(ctx, userID, password)
+	if err != nil {
+		return fmt.Errorf("failed to update user's password: %v", err)
+	}
+	return err
 }
