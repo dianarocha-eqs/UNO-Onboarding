@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	_ "github.com/denisenkom/go-mssqldb" // Import SQL Server driver
+	uuid "github.com/tentone/mssql-uuid"
 )
 
 // Interface for user's data operations
@@ -20,6 +21,8 @@ type UserRepository interface {
 	ListUsers(ctx context.Context, search string, sortDirection int) ([]domain.User, error)
 	// Get user by email and password
 	GetUserByEmailAndPassword(ctx context.Context, email, password string) (*domain.User, error)
+	// Checks user's role and uuid from token
+	GetRoutesAuthorization(ctx context.Context, tokenStr string, getRole *bool, getUserID *uuid.UUID) error
 }
 
 // Performs user's data operations using GORM to interact with the database
@@ -38,7 +41,7 @@ func NewUserRepository() (UserRepository, error) {
 
 func (r *UserRepositoryImpl) CreateUser(ctx context.Context, user *domain.User) error {
 	query := `
-		INSERT INTO Users (id, name, email, password, picture, phone, role)
+		INSERT INTO User (id, name, email, password, picture, phone, role)
 		VALUES (@id, @name, @email, @password, @picture, @phone, @role)
 	`
 
@@ -60,7 +63,7 @@ func (r *UserRepositoryImpl) CreateUser(ctx context.Context, user *domain.User) 
 
 func (r *UserRepositoryImpl) UpdateUser(ctx context.Context, user *domain.User) error {
 	query := `
-		UPDATE Users
+		UPDATE User
 		SET 
 			name = COALESCE(NULLIF(@name, ''), name),
 			email = COALESCE(NULLIF(@email, ''), email),
@@ -87,7 +90,7 @@ func (r *UserRepositoryImpl) UpdateUser(ctx context.Context, user *domain.User) 
 func (r *UserRepositoryImpl) ListUsers(ctx context.Context, search string, sortDirection int) ([]domain.User, error) {
 	query := `
 		SELECT id, name, picture
-		FROM Users
+		FROM User
 		WHERE name LIKE '%' + @search + '%' OR email LIKE '%' + @search + '%'
 		ORDER BY CASE WHEN @sortDirection = 1 THEN name END ASC,
 				 CASE WHEN @sortDirection = -1 THEN name END DESC
@@ -122,7 +125,7 @@ func (r *UserRepositoryImpl) ListUsers(ctx context.Context, search string, sortD
 func (r *UserRepositoryImpl) GetUserByEmailAndPassword(ctx context.Context, email, password string) (*domain.User, error) {
 	query := `
 		SELECT id, name, email, picture, phone, role
-		FROM Users
+		FROM User
 		WHERE email = @email AND password = @password
 	`
 
@@ -138,4 +141,36 @@ func (r *UserRepositoryImpl) GetUserByEmailAndPassword(ctx context.Context, emai
 	}
 
 	return &user, nil
+}
+
+func (r *UserRepositoryImpl) GetRoutesAuthorization(ctx context.Context, tokenStr string, getRole *bool, getUserID *uuid.UUID) error {
+	query := `
+		SELECT user.role, user.id
+		FROM User
+		INNER JOIN User_Token
+		ON User_Token.user_id = user.id
+		WHERE User_Token.token = @token
+	`
+
+	var role bool
+	var userid uuid.UUID
+	row := r.DB.QueryRowContext(ctx, query, sql.Named("token", tokenStr))
+	// Scan the result for role and uuid
+	err := row.Scan(&role, &userid)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return fmt.Errorf("token not found")
+		}
+		return fmt.Errorf("failed to retrieve role and user id: %v", err)
+	}
+
+	// Assign only if the caller wants these values
+	if getRole != nil {
+		*getRole = role
+	}
+	if getUserID != nil {
+		*getUserID = userid
+	}
+
+	return nil
 }
