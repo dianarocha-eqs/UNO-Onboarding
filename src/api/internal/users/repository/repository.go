@@ -23,7 +23,7 @@ type UserRepository interface {
 	GetUserByEmailAndPassword(ctx context.Context, email, password string) (*domain.User, error)
 	// Checks user's role and uuid from token
 	GetRoutesAuthorization(ctx context.Context, tokenStr string, getRole *bool, getUserID *uuid.UUID) error
-	// Only update password -> in tests only
+	// Only update password
 	UpdatePassword(ctx context.Context, userID uuid.UUID, password string) error
 }
 
@@ -43,7 +43,7 @@ func NewUserRepository() (UserRepository, error) {
 
 func (r *UserRepositoryImpl) CreateUser(ctx context.Context, user *domain.User) error {
 	query := `
-		INSERT INTO Users (id, name, email, password, picture, phone, role)
+		INSERT INTO User (id, name, email, password, picture, phone, role)
 		VALUES (@id, @name, @email, @password, @picture, @phone, @role)
 	`
 
@@ -65,7 +65,7 @@ func (r *UserRepositoryImpl) CreateUser(ctx context.Context, user *domain.User) 
 
 func (r *UserRepositoryImpl) UpdateUser(ctx context.Context, user *domain.User) error {
 	query := `
-		UPDATE Users
+		UPDATE User
 		SET 
 			name = COALESCE(NULLIF(@name, ''), name),
 			email = COALESCE(NULLIF(@email, ''), email),
@@ -92,7 +92,7 @@ func (r *UserRepositoryImpl) UpdateUser(ctx context.Context, user *domain.User) 
 func (r *UserRepositoryImpl) ListUsers(ctx context.Context, search string, sortDirection int) ([]domain.User, error) {
 	query := `
 		SELECT id, name, picture
-		FROM Users
+		FROM User
 		WHERE name LIKE '%' + @search + '%' OR email LIKE '%' + @search + '%'
 		ORDER BY CASE WHEN @sortDirection = 1 THEN name END ASC,
 				 CASE WHEN @sortDirection = -1 THEN name END DESC
@@ -127,7 +127,7 @@ func (r *UserRepositoryImpl) ListUsers(ctx context.Context, search string, sortD
 func (r *UserRepositoryImpl) GetUserByEmailAndPassword(ctx context.Context, email, password string) (*domain.User, error) {
 	query := `
 		SELECT id, name, email, picture, phone, role
-		FROM Users
+		FROM User
 		WHERE email = @email AND password = @password
 	`
 	row := r.DB.QueryRowContext(ctx, query, sql.Named("email", email), sql.Named("password", password))
@@ -145,11 +145,11 @@ func (r *UserRepositoryImpl) GetUserByEmailAndPassword(ctx context.Context, emai
 
 func (r *UserRepositoryImpl) GetRoutesAuthorization(ctx context.Context, tokenStr string, getRole *bool, getUserID *uuid.UUID) error {
 	query := `
-		SELECT users.role, users.id
-		FROM users
-		INNER JOIN user_tokens
-		ON user_tokens.user_id = users.id
-		WHERE user_tokens.token = @token
+		SELECT user.role, user.id
+		FROM User
+		INNER JOIN User_Token
+		ON User_Token.user_id = user.id
+		WHERE User_Token.token = @token
 	`
 
 	var role bool
