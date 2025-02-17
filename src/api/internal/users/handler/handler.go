@@ -75,7 +75,6 @@ func (h *UserHandlerImpl) AddUser(c *gin.Context) {
 	}
 
 	var user domain.User
-	var user domain.User
 	if err := c.ShouldBindJSON(&user); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -105,14 +104,6 @@ func (h *UserHandlerImpl) EditUser(c *gin.Context) {
 
 	// Gets uuid from header
 	uuidAuth, _ := c.Get("uuid")
-	// Gets token from header
-	tokenStr, _ := c.Get("token")
-
-	// Gets role from header
-	roleAuth, _ := c.Get("role")
-
-	// Gets uuid from header
-	uuidAuth, _ := c.Get("uuid")
 
 	str := tokenStr.(string)
 	var role bool
@@ -124,7 +115,6 @@ func (h *UserHandlerImpl) EditUser(c *gin.Context) {
 		return
 	}
 
-	var user domain.User
 	var user domain.User
 	// Bind JSON to user struct
 	if err := c.ShouldBindJSON(&user); err != nil {
