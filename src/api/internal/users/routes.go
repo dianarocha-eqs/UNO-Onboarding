@@ -26,7 +26,7 @@ func RegisterUsersRoutes(router *gin.Engine) {
 	if err != nil {
 		log.Fatalf("Failed to create repository: %v", err)
 	}
-	userService := users_service.NewUserService(usersRepos)
+	userService := users_service.NewUserService(usersRepos, authRepo)
 	authService := auth_service.NewAuthService(authRepo, usersRepos)
 
 	h := users_handler.NewUserHandler(authService, userService)

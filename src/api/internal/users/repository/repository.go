@@ -23,10 +23,10 @@ type UserRepository interface {
 	GetUserByEmailAndPassword(ctx context.Context, email, password string) (*domain.User, error)
 	// Checks user's role and uuid from token
 	GetRoutesAuthorization(ctx context.Context, tokenStr string, getRole *bool, getUserID *uuid.UUID) error
+	// Updates user's password and deletes token for password reset
+	ResetPassword(ctx context.Context, token string, password string) error
 	// Get user by email
 	GetUserByEmail(ctx context.Context, email string) (*domain.User, error)
-	// Only update password -> in tests only
-	UpdatePassword(ctx context.Context, userID uuid.UUID, password string) error
 }
 
 // Performs user's data operations using GORM to interact with the database
@@ -45,7 +45,7 @@ func NewUserRepository() (UserRepository, error) {
 
 func (r *UserRepositoryImpl) CreateUser(ctx context.Context, user *domain.User) error {
 	query := `
-		INSERT INTO Users (id, name, email, password, picture, phone, role)
+		INSERT INTO User (id, name, email, password, picture, phone, role)
 		VALUES (@id, @name, @email, @password, @picture, @phone, @role)
 	`
 
@@ -67,7 +67,7 @@ func (r *UserRepositoryImpl) CreateUser(ctx context.Context, user *domain.User) 
 
 func (r *UserRepositoryImpl) UpdateUser(ctx context.Context, user *domain.User) error {
 	query := `
-		UPDATE Users
+		UPDATE User
 		SET 
 			name = COALESCE(NULLIF(@name, ''), name),
 			email = COALESCE(NULLIF(@email, ''), email),
@@ -94,7 +94,7 @@ func (r *UserRepositoryImpl) UpdateUser(ctx context.Context, user *domain.User) 
 func (r *UserRepositoryImpl) ListUsers(ctx context.Context, search string, sortDirection int) ([]domain.User, error) {
 	query := `
 		SELECT id, name, picture
-		FROM Users
+		FROM User
 		WHERE name LIKE '%' + @search + '%' OR email LIKE '%' + @search + '%'
 		ORDER BY CASE WHEN @sortDirection = 1 THEN name END ASC,
 				 CASE WHEN @sortDirection = -1 THEN name END DESC
@@ -129,7 +129,7 @@ func (r *UserRepositoryImpl) ListUsers(ctx context.Context, search string, sortD
 func (r *UserRepositoryImpl) GetUserByEmailAndPassword(ctx context.Context, email, password string) (*domain.User, error) {
 	query := `
 		SELECT id, name, email, picture, phone, role
-		FROM Users
+		FROM User
 		WHERE email = @email AND password = @password
 	`
 	row := r.DB.QueryRowContext(ctx, query, sql.Named("email", email), sql.Named("password", password))
@@ -147,11 +147,11 @@ func (r *UserRepositoryImpl) GetUserByEmailAndPassword(ctx context.Context, emai
 
 func (r *UserRepositoryImpl) GetRoutesAuthorization(ctx context.Context, tokenStr string, getRole *bool, getUserID *uuid.UUID) error {
 	query := `
-		SELECT users.role, users.id
-		FROM users
-		INNER JOIN user_tokens
-		ON user_tokens.user_id = users.id
-		WHERE user_tokens.token = @token
+		SELECT user.role, user.id
+		FROM User
+		INNER JOIN User_Token
+		ON User_Token.user_id = user.id
+		WHERE User_Token.token = @token
 	`
 
 	var role bool
@@ -196,20 +196,58 @@ func (r *UserRepositoryImpl) GetUserByEmail(ctx context.Context, email string) (
 	return &user, nil
 }
 
-func (r *UserRepositoryImpl) UpdatePassword(ctx context.Context, userID uuid.UUID, password string) error {
+func (r *UserRepositoryImpl) ResetPassword(ctx context.Context, token string, password string) error {
+
+	// Get a Tx for making transaction requests.
+	tx, err := r.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to start transaction: %v", err)
+	}
+
+	// Defer a rollback in case anything fails.
+	defer tx.Rollback()
+
+	// Gets user id from token
 	query := `
-		UPDATE Users
-		SET 
-			password = @password
-		WHERE id = @id
+		SELECT user_id
+		FROM Password_Reset_Tokens
+		WHERE token = @token
 	`
 
-	_, err := r.DB.ExecContext(ctx, query,
+	var userUuid uuid.UUID
+	row := r.DB.QueryRowContext(ctx, query, sql.Named("token", token))
+	err = row.Scan(&userUuid)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return fmt.Errorf("invalid or expired token")
+		}
+		return fmt.Errorf("failed to retrieve user: %v", err)
+	}
+
+	// Updates user's password from id retrived
+	query = `
+		UPDATE User
+		SET password = @password
+		WHERE id = @id
+	`
+	_, err = tx.ExecContext(ctx, query,
 		sql.Named("password", password),
-		sql.Named("id", userID),
+		sql.Named("id", userUuid),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to update user's password: %v", err)
 	}
+
+	// Deletes token for this action
+	query = `DELETE FROM Password_Reset_Tokens WHERE token = @token`
+	_, err = tx.ExecContext(ctx, query, sql.Named("token", token))
+	if err != nil {
+		return fmt.Errorf("failed to delete reset token: %v", err)
+	}
+
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %v", err)
+	}
+
 	return nil
 }

@@ -17,6 +17,14 @@ type AuthHandler interface {
 	Logout(c *gin.Context)
 }
 
+// Structure request for login
+type loginRequest struct {
+	// Email of the user
+	Email string `json:"email" binding:"required"`
+	// Password of the user
+	Password string `json:"password" binding:"required"`
+}
+
 // Process HTTP requests and interaction with the AuthService and UserService for authentication operations
 type AuthHandlerImpl struct {
 	AuthService auth_service.AuthService
@@ -28,12 +36,6 @@ func NewAuthHandler(authService auth_service.AuthService, userService user_servi
 		AuthService: authService,
 		UserService: userService,
 	}
-}
-
-// Structure request for login
-type loginRequest struct {
-	Email    string `json:"email" binding:"required"`
-	Password string `json:"password" binding:"required"`
 }
 
 func (h *AuthHandlerImpl) Login(c *gin.Context) {
