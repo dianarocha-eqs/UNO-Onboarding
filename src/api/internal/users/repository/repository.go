@@ -24,7 +24,7 @@ type UserRepository interface {
 	// Checks user's role and uuid from token
 	GetRoutesAuthorization(ctx context.Context, tokenStr string, getRole *bool, getUserID *uuid.UUID) error
 	// Updates user's password and deletes token for password reset
-	ResetPassword(ctx context.Context, userID uuid.UUID, password string) error
+	ResetPassword(ctx context.Context, token string, password string) error
 }
 
 // Performs user's data operations using GORM to interact with the database
@@ -175,7 +175,7 @@ func (r *UserRepositoryImpl) GetRoutesAuthorization(ctx context.Context, tokenSt
 	return nil
 }
 
-func (r *UserRepositoryImpl) ResetPassword(ctx context.Context, userID uuid.UUID, password string) error {
+func (r *UserRepositoryImpl) ResetPassword(ctx context.Context, token string, password string) error {
 
 	// Get a Tx for making transaction requests.
 	tx, err := r.DB.BeginTx(ctx, nil)
@@ -186,30 +186,38 @@ func (r *UserRepositoryImpl) ResetPassword(ctx context.Context, userID uuid.UUID
 	// Defer a rollback in case anything fails.
 	defer tx.Rollback()
 
+	// Gets user id from token
 	query := `
+		SELECT user_id
+		FROM Password_Reset_Tokens
+		WHERE token = @token
+	`
+
+	var userUuid uuid.UUID
+	row := r.DB.QueryRowContext(ctx, query, sql.Named("token", token))
+	err = row.Scan(&userUuid)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return fmt.Errorf("invalid or expired token")
+		}
+		return fmt.Errorf("failed to retrieve user: %v", err)
+	}
+
+	// Updates user's password from id retrived
+	query = `
 		UPDATE Users
 		SET password = @password
 		WHERE id = @id
 	`
 	_, err = tx.ExecContext(ctx, query,
 		sql.Named("password", password),
-		sql.Named("id", userID),
+		sql.Named("id", userUuid),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to update user's password: %v", err)
 	}
 
-	// Retrieve the token associated with the userID
-	var token string
-	query = `SELECT token FROM password_reset_tokens WHERE user_id = @id`
-	err = tx.QueryRowContext(ctx, query, sql.Named("id", userID)).Scan(&token)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return fmt.Errorf("no reset token found for user ID %v", userID)
-		}
-		return fmt.Errorf("failed to retrieve reset token: %v", err)
-	}
-
+	// Deletes token for this action
 	query = `DELETE FROM password_reset_tokens WHERE token = @token`
 	_, err = tx.ExecContext(ctx, query, sql.Named("token", token))
 	if err != nil {

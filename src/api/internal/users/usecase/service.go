@@ -166,18 +166,13 @@ func (s *UserServiceImpl) GetRoutesAuthorization(ctx context.Context, tokenStr s
 
 func (s *UserServiceImpl) ResetPassword(ctx context.Context, token string, newPassword string) error {
 
-	var userID, err = s.AuthRepository.GetUserPasswordResetToken(ctx, token)
-	if err != nil {
-		return fmt.Errorf("failed to get user by token: %w", err)
-	}
-
 	// hash the password received to store in database (never plain password)
 	_, hashedPassword, err := utils.GeneratePasswordHash(newPassword)
 	if err != nil {
 		return fmt.Errorf("failed to hash password: %w", err)
 	}
 
-	err = s.UserRepository.ResetPassword(ctx, userID, hashedPassword)
+	err = s.UserRepository.ResetPassword(ctx, token, hashedPassword)
 	if err != nil {
 		return fmt.Errorf("failed to update user's password: %w", err)
 	}

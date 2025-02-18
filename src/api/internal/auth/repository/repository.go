@@ -8,7 +8,6 @@ import (
 	"fmt"
 
 	_ "github.com/denisenkom/go-mssqldb" // Import SQL Server driver
-	uuid "github.com/tentone/mssql-uuid"
 )
 
 // Interface for token's data operations
@@ -19,8 +18,6 @@ type AuthRepository interface {
 	GetToken(ctx context.Context, tokenStr string) (*auth_domain.AuthToken, error)
 	// Sets token to false (invalid)
 	InvalidateToken(ctx context.Context, tokenStr string) error
-	// Get user's password reset token
-	GetUserPasswordResetToken(ctx context.Context, token string) (uuid.UUID, error)
 }
 
 // GORM to interact with the token's database
@@ -95,24 +92,4 @@ func (r *AuthRepositoryImpl) InvalidateToken(ctx context.Context, tokenStr strin
 	}
 
 	return nil
-}
-
-func (r *AuthRepositoryImpl) GetUserPasswordResetToken(ctx context.Context, token string) (uuid.UUID, error) {
-	query := `
-		SELECT user_id
-		FROM Password_Reset_Tokens
-		WHERE token = @token
-	`
-
-	var userUuid uuid.UUID
-	row := r.DB.QueryRowContext(ctx, query, sql.Named("token", token))
-	err := row.Scan(&userUuid)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return uuid.NilUUID, fmt.Errorf("invalid or expired token")
-		}
-		return uuid.NilUUID, fmt.Errorf("failed to retrieve user: %v", err)
-	}
-
-	return userUuid, nil
 }
