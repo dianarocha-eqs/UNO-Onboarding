@@ -26,6 +26,8 @@ type UserService interface {
 	GetUserByEmailAndPassword(ctx context.Context, email, password string) (*domain.User, error)
 	// Checks user's role and uuid from token
 	GetRoutesAuthorization(ctx context.Context, tokenStr string, getRole *bool, getUserID *uuid.UUID) error
+	// Get user by token
+	GetUserByToken(ctx context.Context, tokenStr string) (uuid.UUID, error)
 }
 
 // Handles user's logic and interaction with the repository
@@ -145,4 +147,8 @@ func (s *UserServiceImpl) GetUserByEmailAndPassword(ctx context.Context, email, 
 
 func (s *UserServiceImpl) GetRoutesAuthorization(ctx context.Context, tokenStr string, getRole *bool, getUserID *uuid.UUID) error {
 	return s.Repo.GetRoutesAuthorization(ctx, tokenStr, getRole, getUserID)
+}
+
+func (s *UserServiceImpl) GetUserByToken(ctx context.Context, tokenStr string) (uuid.UUID, error) {
+	return s.Repo.GetUserByToken(ctx, tokenStr)
 }

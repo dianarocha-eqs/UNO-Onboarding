@@ -3,13 +3,16 @@ package usecase
 import (
 	"api/internal/sensors/domain"
 	"api/internal/sensors/repository"
+	"context"
 	"errors"
+
+	uuid "github.com/tentone/mssql-uuid"
 )
 
 // SensorService defines the business logic methods for managing sensors.
 type SensorService interface {
 	// CreateSensor creates a new sensor
-	CreateSensor(sensor *domain.Sensor) error
+	CreateSensor(ctx context.Context, sensor *domain.Sensor, userUuid uuid.UUID) error
 	// DeleteSensor removes a sensor by its ID
 	DeleteSensor(id uint) error
 	// GetAllSensors retrieves all sensors
@@ -31,22 +34,32 @@ func NewSensorService(repo repository.SensorRepository) SensorService {
 }
 
 // Checks the required fields of the Sensor.
-func validateRquiredFields(sensor *domain.Sensor) error {
-	if sensor.Name == "" || sensor.Category == "" {
-		return errors.New("name and category are required")
+func validateRequiredFields(sensor *domain.Sensor) error {
+	if sensor.Name == "" || (sensor.Category != domain.TEMPERATURE && sensor.Category != domain.PRESSURE && sensor.Category != domain.HUMIDITY) {
+		return errors.New("name is required and category must be one of the predefined values (Temperature = 0, Humidity = 1, Pressure = 2 )")
 	}
 	return nil
 }
 
-func (s *SensorServiceImpl) CreateSensor(sensor *domain.Sensor) error {
-	if err := validateRquiredFields(sensor); err != nil {
+func (s *SensorServiceImpl) CreateSensor(ctx context.Context, sensor *domain.Sensor, userUuid uuid.UUID) error {
+
+	var err error
+	if err = validateRequiredFields(sensor); err != nil {
 		return err
 	}
-	return s.Repo.CreateSensor(sensor)
+
+	sensor.ID = uuid.NewV4()
+	sensor.SensorOwner = userUuid
+	err = s.Repo.CreateSensor(ctx, sensor)
+	if err != nil {
+		return errors.New("failed to create sensor")
+	}
+
+	return s.Repo.CreateSensor(ctx, sensor)
 }
 
 func (s *SensorServiceImpl) UpdateSensor(sensor *domain.Sensor) error {
-	if err := validateRquiredFields(sensor); err != nil {
+	if err := validateRequiredFields(sensor); err != nil {
 		return err
 	}
 	return s.Repo.UpdateSensor(sensor)

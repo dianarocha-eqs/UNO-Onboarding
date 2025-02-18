@@ -2,8 +2,10 @@ package routes
 
 import (
 	"api/internal/sensors/handler"
-	"api/internal/sensors/repository"
-	"api/internal/sensors/usecase"
+	sensor_repository "api/internal/sensors/repository"
+	sensor_service "api/internal/sensors/usecase"
+	users_repository "api/internal/users/repository"
+	users_service "api/internal/users/usecase"
 	"log"
 
 	"github.com/gin-gonic/gin"
@@ -12,12 +14,20 @@ import (
 // RegisterSensorRoutes declares the routes that can be accessed for sensor management.
 func RegisterSensorRoutes(router *gin.Engine) {
 
-	repos, err := repository.NewSensorRepository()
+	sensorRepo, err := sensor_repository.NewSensorRepository()
+	if err != nil {
+		log.Fatalf("Failed to create auth repository: %v", err)
+	}
+
+	usersRepos, err := users_repository.NewUserRepository()
 	if err != nil {
 		log.Fatalf("Failed to create repository: %v", err)
 	}
-	service := usecase.NewSensorService(repos)
-	h := handler.NewSensorHandler(service)
+
+	userService := users_service.NewUserService(usersRepos)
+	sensorService := sensor_service.NewSensorService(sensorRepo)
+
+	h := handler.NewSensorHandler(sensorService, userService)
 
 	// Sensor routes
 	api := router.Group("/api/")

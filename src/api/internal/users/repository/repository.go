@@ -23,6 +23,8 @@ type UserRepository interface {
 	GetUserByEmailAndPassword(ctx context.Context, email, password string) (*domain.User, error)
 	// Checks user's role and uuid from token
 	GetRoutesAuthorization(ctx context.Context, tokenStr string, getRole *bool, getUserID *uuid.UUID) error
+	// Get user id by token
+	GetUserByToken(ctx context.Context, tokenStr string) (uuid.UUID, error)
 }
 
 // Performs user's data operations using GORM to interact with the database
@@ -173,4 +175,26 @@ func (r *UserRepositoryImpl) GetRoutesAuthorization(ctx context.Context, tokenSt
 	}
 
 	return nil
+}
+
+func (r *UserRepositoryImpl) GetUserByToken(ctx context.Context, tokenStr string) (uuid.UUID, error) {
+	query := `
+		SELECT user.id
+		FROM User
+		INNER JOIN User_Token
+		ON User_Token.user_id = user.id
+		WHERE User_Token.token = @token
+	`
+
+	var userUuid uuid.UUID
+	row := r.DB.QueryRowContext(ctx, query, sql.Named("token", tokenStr))
+	err := row.Scan(&userUuid)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return uuid.NilUUID, fmt.Errorf("token not found")
+		}
+		return uuid.NilUUID, fmt.Errorf("failed to retrieve role and user id: %v", err)
+	}
+
+	return userUuid, nil
 }
