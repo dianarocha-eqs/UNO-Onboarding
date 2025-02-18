@@ -102,7 +102,7 @@ func (s *AuthServiceImpl) GetUserPasswordResetToken(ctx context.Context, token s
 }
 
 func (s *AuthServiceImpl) DeleteToken(ctx context.Context, token string) error {
-	err := s.AuthRepo.DeteteToken(ctx, token)
+	err := s.AuthRepo.DeleteToken(ctx, token)
 	if err != nil {
 		return fmt.Errorf("failed to delete token")
 	}
