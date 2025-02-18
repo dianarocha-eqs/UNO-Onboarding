@@ -35,9 +35,9 @@ type UserResponse struct {
 
 // Structure request for list users
 type FilterSearchAndSort struct {
-	// Search term on user's
+	// Search term to filter users by name or email
 	Search string `json:"search"`
-	// Sort by
+	// Sort direction: 1 for ascending, -1 for descending order
 	Sort int `json:"sort"`
 }
 
