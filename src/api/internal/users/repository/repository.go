@@ -205,7 +205,7 @@ func (r *UserRepositoryImpl) ResetPassword(ctx context.Context, token string, pa
 
 	// Updates user's password from id retrived
 	query = `
-		UPDATE Users
+		UPDATE User
 		SET password = @password
 		WHERE id = @id
 	`
@@ -218,7 +218,7 @@ func (r *UserRepositoryImpl) ResetPassword(ctx context.Context, token string, pa
 	}
 
 	// Deletes token for this action
-	query = `DELETE FROM password_reset_tokens WHERE token = @token`
+	query = `DELETE FROM Password_Reset_Tokens WHERE token = @token`
 	_, err = tx.ExecContext(ctx, query, sql.Named("token", token))
 	if err != nil {
 		return fmt.Errorf("failed to delete reset token: %v", err)
