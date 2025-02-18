@@ -20,7 +20,7 @@ type AuthRepository interface {
 	// Sets token to false (invalid)
 	InvalidateToken(ctx context.Context, tokenStr string) error
 	// Get user's password reset token
-	GetUserByTokenToResetPassword(ctx context.Context, token string) (uuid.UUID, error)
+	GetUserPasswordResetToken(ctx context.Context, token string) (uuid.UUID, error)
 	// Delete token
 	DeteteToken(ctx context.Context, token string) error
 }
@@ -99,16 +99,16 @@ func (r *AuthRepositoryImpl) InvalidateToken(ctx context.Context, tokenStr strin
 	return nil
 }
 
-func (r *AuthRepositoryImpl) GetUserByTokenToResetPassword(ctx context.Context, token string) (uuid.UUID, error) {
+func (r *AuthRepositoryImpl) GetUserPasswordResetToken(ctx context.Context, token string) (uuid.UUID, error) {
 	query := `
 		SELECT user_id
 		FROM password_reset_tokens
 		WHERE token = @token
 	`
 
-	var userID uuid.UUID
+	var userUuid uuid.UUID
 	row := r.DB.QueryRowContext(ctx, query, sql.Named("token", token))
-	err := row.Scan(&userID)
+	err := row.Scan(&userUuid)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return uuid.NilUUID, fmt.Errorf("invalid or expired token")
@@ -116,7 +116,7 @@ func (r *AuthRepositoryImpl) GetUserByTokenToResetPassword(ctx context.Context, 
 		return uuid.NilUUID, fmt.Errorf("failed to retrieve user: %v", err)
 	}
 
-	return userID, nil
+	return userUuid, nil
 }
 
 func (r *AuthRepositoryImpl) DeteteToken(ctx context.Context, token string) error {

@@ -21,7 +21,7 @@ type AuthService interface {
 	// Checks the state of token
 	IsTokenValid(ctx context.Context, tokenStr string) (bool, error)
 	// Get user's password reset token
-	GetUserByTokenToResetPassword(ctx context.Context, token string) (uuid.UUID, error)
+	GetUserPasswordResetToken(ctx context.Context, token string) (uuid.UUID, error)
 	// Delete token
 	DeleteToken(ctx context.Context, token string) error
 }
@@ -93,8 +93,8 @@ func (s *AuthServiceImpl) IsTokenValid(ctx context.Context, tokenStr string) (bo
 	return authToken.IsValid, nil
 }
 
-func (s *AuthServiceImpl) GetUserByTokenToResetPassword(ctx context.Context, token string) (uuid.UUID, error) {
-	userID, err := s.AuthRepo.GetUserByTokenToResetPassword(ctx, token)
+func (s *AuthServiceImpl) GetUserPasswordResetToken(ctx context.Context, token string) (uuid.UUID, error) {
+	userID, err := s.AuthRepo.GetUserPasswordResetToken(ctx, token)
 	if err != nil {
 		return uuid.NilUUID, fmt.Errorf("failed to get user by token: %v", err)
 	}

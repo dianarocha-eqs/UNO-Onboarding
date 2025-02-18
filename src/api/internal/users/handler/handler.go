@@ -180,10 +180,8 @@ func (h *UserHandlerImpl) ResetPassword(c *gin.Context) {
 		return
 	}
 
-	var userID uuid.UUID
-	var err error
 	// Fetch user id by token to check the validation state and proceed
-	userID, err = h.AuthService.GetUserByTokenToResetPassword(c.Request.Context(), req.Token)
+	var userID, err = h.AuthService.GetUserPasswordResetToken(c.Request.Context(), req.Token)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "failed to get user by token to reset password"})
 		return
@@ -197,7 +195,6 @@ func (h *UserHandlerImpl) ResetPassword(c *gin.Context) {
 		return
 	}
 
-	fmt.Println(hashedPassword)
 	err = h.UserService.UpdatePassword(c.Request.Context(), userID, hashedPassword)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update password"})
