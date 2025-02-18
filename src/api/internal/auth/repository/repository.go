@@ -21,8 +21,6 @@ type AuthRepository interface {
 	InvalidateToken(ctx context.Context, tokenStr string) error
 	// Get user's password reset token
 	GetUserPasswordResetToken(ctx context.Context, token string) (uuid.UUID, error)
-	// Delete token
-	DeleteToken(ctx context.Context, token string) error
 }
 
 // GORM to interact with the token's database
@@ -102,7 +100,7 @@ func (r *AuthRepositoryImpl) InvalidateToken(ctx context.Context, tokenStr strin
 func (r *AuthRepositoryImpl) GetUserPasswordResetToken(ctx context.Context, token string) (uuid.UUID, error) {
 	query := `
 		SELECT user_id
-		FROM password_reset_tokens
+		FROM Password_Reset_Tokens
 		WHERE token = @token
 	`
 
@@ -117,15 +115,4 @@ func (r *AuthRepositoryImpl) GetUserPasswordResetToken(ctx context.Context, toke
 	}
 
 	return userUuid, nil
-}
-
-func (r *AuthRepositoryImpl) DeleteToken(ctx context.Context, token string) error {
-
-	deleteQuery := `
-		DELETE FROM password_reset_tokens
-		WHERE token = @token
-	`
-	_, _ = r.DB.ExecContext(ctx, deleteQuery, sql.Named("token", token))
-
-	return nil
 }

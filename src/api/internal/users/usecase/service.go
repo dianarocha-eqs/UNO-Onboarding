@@ -2,8 +2,9 @@ package usecase
 
 import (
 	aux "api/auxiliary"
+	auth_repository "api/internal/auth/repository"
 	"api/internal/users/domain"
-	"api/internal/users/repository"
+	users_repository "api/internal/users/repository"
 	"api/utils"
 
 	"context"
@@ -26,17 +27,21 @@ type UserService interface {
 	GetUserByEmailAndPassword(ctx context.Context, email, password string) (*domain.User, error)
 	// Checks user's role and uuid from token
 	GetRoutesAuthorization(ctx context.Context, tokenStr string, getRole *bool, getUserID *uuid.UUID) error
-	// Updates user's password
-	UpdatePassword(ctx context.Context, userID uuid.UUID, password string) error
+	// Reset previous password of user
+	ResetPassword(ctx context.Context, token string, newPassword string) error
 }
 
 // Handles user's logic and interaction with the repository
 type UserServiceImpl struct {
-	Repo repository.UserRepository
+	UserRepository users_repository.UserRepository
+	AuthRepository auth_repository.AuthRepository
 }
 
-func NewUserService(repo repository.UserRepository) UserService {
-	return &UserServiceImpl{Repo: repo}
+func NewUserService(userRepo users_repository.UserRepository, authRepo auth_repository.AuthRepository) UserService {
+	return &UserServiceImpl{
+		UserRepository: userRepo,
+		AuthRepository: authRepo,
+	}
 }
 
 // Checks the required fields and their format
@@ -77,7 +82,7 @@ func (s *UserServiceImpl) CreateUser(ctx context.Context, user *domain.User) (uu
 	}
 
 	user.ID = uuid.NewV4()
-	err = s.Repo.CreateUser(ctx, user)
+	err = s.UserRepository.CreateUser(ctx, user)
 	if err != nil {
 		return uuid.NilUUID, errors.New("failed to create user")
 	}
@@ -114,7 +119,7 @@ func (s *UserServiceImpl) UpdateUser(ctx context.Context, user *domain.User) err
 		}
 	}
 
-	err = s.Repo.UpdateUser(ctx, user)
+	err = s.UserRepository.UpdateUser(ctx, user)
 	if err != nil {
 		return fmt.Errorf("failed to update user with id %s: %v", user.ID.String(), err)
 	}
@@ -130,7 +135,7 @@ func (s *UserServiceImpl) ListUsers(ctx context.Context, search string, sortDire
 	var users []domain.User
 	var err error
 	// Call the repository (which executes the stored procedure to handle searching and sorting)
-	users, err = s.Repo.ListUsers(ctx, search, sortDirection)
+	users, err = s.UserRepository.ListUsers(ctx, search, sortDirection)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve users: %w", err)
 	}
@@ -143,7 +148,7 @@ func (s *UserServiceImpl) ListUsers(ctx context.Context, search string, sortDire
 }
 
 func (s *UserServiceImpl) GetUserByEmailAndPassword(ctx context.Context, email, password string) (*domain.User, error) {
-	user, err := s.Repo.GetUserByEmailAndPassword(ctx, email, password)
+	user, err := s.UserRepository.GetUserByEmailAndPassword(ctx, email, password)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve user: %v", err)
 	}
@@ -152,17 +157,30 @@ func (s *UserServiceImpl) GetUserByEmailAndPassword(ctx context.Context, email, 
 }
 
 func (s *UserServiceImpl) GetRoutesAuthorization(ctx context.Context, tokenStr string, getRole *bool, getUserID *uuid.UUID) error {
-	err := s.Repo.GetRoutesAuthorization(ctx, tokenStr, getRole, getUserID)
+	err := s.UserRepository.GetRoutesAuthorization(ctx, tokenStr, getRole, getUserID)
 	if err != nil {
 		return fmt.Errorf("failed to retrieve user id: %v", err)
 	}
 	return err
 }
 
-func (s *UserServiceImpl) UpdatePassword(ctx context.Context, userID uuid.UUID, password string) error {
-	err := s.Repo.UpdatePassword(ctx, userID, password)
+func (s *UserServiceImpl) ResetPassword(ctx context.Context, token string, newPassword string) error {
+
+	var userID, err = s.AuthRepository.GetUserPasswordResetToken(ctx, token)
 	if err != nil {
-		return fmt.Errorf("failed to update user's password: %v", err)
+		return fmt.Errorf("failed to get user by token: %w", err)
 	}
-	return err
+
+	// hash the password received to store in database (never plain password)
+	_, hashedPassword, err := utils.GeneratePasswordHash(newPassword)
+	if err != nil {
+		return fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	err = s.UserRepository.ResetPassword(ctx, userID, hashedPassword)
+	if err != nil {
+		return fmt.Errorf("failed to update user's password: %w", err)
+	}
+
+	return nil
 }
