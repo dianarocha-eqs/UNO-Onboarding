@@ -4,8 +4,6 @@ import (
 	auth_service "api/internal/auth/usecase"
 	"api/internal/users/domain"
 	users_service "api/internal/users/usecase"
-	"api/utils"
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -27,20 +25,27 @@ type UserHandler interface {
 
 // Structure response for list users
 type UserResponse struct {
-	Name    string    `json:"name"`
-	UUID    uuid.UUID `json:"id"`
-	Picture string    `json:"picture"`
+	// Name of the user
+	Name string `json:"name"`
+	// UUID of the user
+	UUID uuid.UUID `json:"id"`
+	// Picture of the user
+	Picture string `json:"picture"`
 }
 
 // Structure request for list users
 type FilterSearchAndSort struct {
+	// Search term to filter users by name or email
 	Search string `json:"search"`
-	Sort   int    `json:"sort"`
+	// Sort direction: 1 for ascending, -1 for descending order
+	Sort int `json:"sort"`
 }
 
 // Structure request for reset password
 type ResetPasswordRequest struct {
-	Token    string `json:"token"`
+	// Password reset token
+	Token string `json:"token"`
+	// New password to be set for the user
 	Password string `json:"password"`
 }
 
@@ -175,34 +180,15 @@ func (h *UserHandlerImpl) ListUsers(c *gin.Context) {
 func (h *UserHandlerImpl) ResetPassword(c *gin.Context) {
 
 	var req ResetPasswordRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	var err error
+	if err = c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid token or password"})
 		return
 	}
 
-	var userID uuid.UUID
-	var err error
-	// Fetch user by token
-	userID, err = h.AuthService.GetUserByPasswordResetToken(c.Request.Context(), req.Token)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "failed to get user by token to reset password"})
+	if err = h.UserService.ResetPassword(c.Request.Context(), req.Token, req.Password); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
-	}
-
-	_, hashedPassword, err := utils.GeneratePasswordHash(req.Password)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate password hash"})
-		return
-	}
-
-	err = h.UserService.UpdatePassword(c.Request.Context(), userID, hashedPassword)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update password"})
-		return
-	}
-
-	if err = h.AuthService.DeleteToken(c.Request.Context(), req.Token); err != nil {
-		fmt.Printf("Warning: Failed to delete token: %v\n", err)
 	}
 
 	c.Status(http.StatusOK)
