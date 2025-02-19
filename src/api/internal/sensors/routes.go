@@ -1,9 +1,14 @@
 package routes
 
 import (
+	auth_repository "api/internal/auth/repository"
+	auth_service "api/internal/auth/usecase"
 	"api/internal/sensors/handler"
-	"api/internal/sensors/repository"
-	"api/internal/sensors/usecase"
+	sensor_repository "api/internal/sensors/repository"
+	sensor_service "api/internal/sensors/usecase"
+	users_repository "api/internal/users/repository"
+	users_service "api/internal/users/usecase"
+	"api/utils"
 	"log"
 
 	"github.com/gin-gonic/gin"
@@ -12,20 +17,32 @@ import (
 // RegisterSensorRoutes declares the routes that can be accessed for sensor management.
 func RegisterSensorRoutes(router *gin.Engine) {
 
-	repos, err := repository.NewSensorRepository()
+	sensorRepo, err := sensor_repository.NewSensorRepository()
+	if err != nil {
+		log.Fatalf("Failed to create auth repository: %v", err)
+	}
+
+	usersRepos, err := users_repository.NewUserRepository()
 	if err != nil {
 		log.Fatalf("Failed to create repository: %v", err)
 	}
-	service := usecase.NewSensorService(repos)
-	h := handler.NewSensorHandler(service)
+
+	authRepo, err := auth_repository.NewAuthRepository()
+	if err != nil {
+		log.Fatalf("Failed to create auth repository: %v", err)
+	}
+
+	_ = users_service.NewUserService(usersRepos, authRepo)
+	sensorService := sensor_service.NewSensorService(sensorRepo)
+	authService := auth_service.NewAuthService(authRepo, usersRepos)
+
+	h := handler.NewSensorHandler(sensorService)
 
 	// Sensor routes
-	api := router.Group("/v1/sensors/")
+	api := router.Group("/v1/sensor")
+	api.Use(utils.AuthMiddleware(authService))
 	{
-		api.POST("list", h.ListSensors)           // List all sensors
-		api.GET("sensors/:id", h.GetSensor)       // Get sensor by ID
-		api.POST("sensors", h.AddSensor)          // Add sensor
-		api.PUT("sensors/:id", h.UpdateSensor)    // Update sensor
-		api.DELETE("sensors/:id", h.DeleteSensor) // Delete sensor
+		// List sensors
+		api.POST("list", h.ListSensors)
 	}
 }
