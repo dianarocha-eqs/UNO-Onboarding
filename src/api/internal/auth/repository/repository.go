@@ -71,7 +71,7 @@ func (r *AuthRepositoryImpl) GetToken(ctx context.Context, tokenStr string) (*au
 	err := row.Scan(&authToken.UserID, &authToken.Token, &authToken.IsValid)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("token not found")
+			return nil, fmt.Errorf("invalid or expired token")
 		}
 		return nil, fmt.Errorf("failed to retrieve token: %v", err)
 	}

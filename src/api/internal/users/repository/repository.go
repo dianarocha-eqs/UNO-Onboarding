@@ -23,6 +23,8 @@ type UserRepository interface {
 	GetUserByEmailAndPassword(ctx context.Context, email, password string) (*domain.User, error)
 	// Checks user's role and uuid from token
 	GetRoutesAuthorization(ctx context.Context, tokenStr string, getRole *bool, getUserID *uuid.UUID) error
+	// Updates user's password and deletes token for password reset
+	ResetPassword(ctx context.Context, token string, password string) error
 }
 
 // Performs user's data operations using GORM to interact with the database
@@ -128,9 +130,7 @@ func (r *UserRepositoryImpl) GetUserByEmailAndPassword(ctx context.Context, emai
 		FROM User
 		WHERE email = @email AND password = @password
 	`
-
 	row := r.DB.QueryRowContext(ctx, query, sql.Named("email", email), sql.Named("password", password))
-
 	var user domain.User
 	err := row.Scan(&user.ID, &user.Name, &user.Email, &user.Picture, &user.Phone, &user.Role)
 	if err != nil {
@@ -170,6 +170,62 @@ func (r *UserRepositoryImpl) GetRoutesAuthorization(ctx context.Context, tokenSt
 	}
 	if getUserID != nil {
 		*getUserID = userid
+	}
+
+	return nil
+}
+
+func (r *UserRepositoryImpl) ResetPassword(ctx context.Context, token string, password string) error {
+
+	// Get a Tx for making transaction requests.
+	tx, err := r.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to start transaction: %v", err)
+	}
+
+	// Defer a rollback in case anything fails.
+	defer tx.Rollback()
+
+	// Gets user id from token
+	query := `
+		SELECT user_id
+		FROM Password_Reset_Tokens
+		WHERE token = @token
+	`
+
+	var userUuid uuid.UUID
+	row := r.DB.QueryRowContext(ctx, query, sql.Named("token", token))
+	err = row.Scan(&userUuid)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return fmt.Errorf("invalid or expired token")
+		}
+		return fmt.Errorf("failed to retrieve user: %v", err)
+	}
+
+	// Updates user's password from id retrived
+	query = `
+		UPDATE User
+		SET password = @password
+		WHERE id = @id
+	`
+	_, err = tx.ExecContext(ctx, query,
+		sql.Named("password", password),
+		sql.Named("id", userUuid),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to update user's password: %v", err)
+	}
+
+	// Deletes token for this action
+	query = `DELETE FROM Password_Reset_Tokens WHERE token = @token`
+	_, err = tx.ExecContext(ctx, query, sql.Named("token", token))
+	if err != nil {
+		return fmt.Errorf("failed to delete reset token: %v", err)
+	}
+
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %v", err)
 	}
 
 	return nil
