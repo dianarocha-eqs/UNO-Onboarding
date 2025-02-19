@@ -11,6 +11,12 @@ const (
 	PUBLIC  bool = false
 	PRIVATE bool = true
 
+	// Color constants
+	RED    string = "#FF0000"
+	YELLOW string = "#FFFF00"
+	GREEN  string = "#00FF00"
+	BLUE   string = "#OOOOFF"
+
 	// Category constants
 	TEMPERATURE int = 0
 	HUMIDITY    int = 1

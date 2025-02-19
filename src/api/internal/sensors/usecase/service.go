@@ -30,23 +30,23 @@ func NewSensorService(repo repository.SensorRepository) SensorService {
 	return &SensorServiceImpl{Repo: repo}
 }
 
-// Checks the required fields of the Sensor.
-func validateRquiredFields(sensor *domain.Sensor) error {
-	if sensor.Name == "" || sensor.Category == "" {
-		return errors.New("name and category are required")
+// Checks the required fields of the Sensor
+func validateRequiredFields(sensor *domain.Sensor) error {
+	if sensor.Name == "" || (sensor.Category != domain.TEMPERATURE && sensor.Category != domain.PRESSURE && sensor.Category != domain.HUMIDITY) {
+		return errors.New("name is required and category must be one of the predefined values (Temperature = 0, Humidity = 1, Pressure = 2 )")
 	}
 	return nil
 }
 
 func (s *SensorServiceImpl) CreateSensor(sensor *domain.Sensor) error {
-	if err := validateRquiredFields(sensor); err != nil {
+	if err := validateRequiredFields(sensor); err != nil {
 		return err
 	}
 	return s.Repo.CreateSensor(sensor)
 }
 
 func (s *SensorServiceImpl) UpdateSensor(sensor *domain.Sensor) error {
-	if err := validateRquiredFields(sensor); err != nil {
+	if err := validateRequiredFields(sensor); err != nil {
 		return err
 	}
 	return s.Repo.UpdateSensor(sensor)
