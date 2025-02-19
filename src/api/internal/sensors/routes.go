@@ -25,7 +25,7 @@ func RegisterSensorRoutes(router *gin.Engine) {
 		api.GET("sensors", h.GetSensors)          // Get all sensors
 		api.GET("sensors/:id", h.GetSensor)       // Get sensor by ID
 		api.POST("sensors", h.AddSensor)          // Add sensor
-		api.PUT("edit", h.UpdateSensor)           // Update sensor
+		api.POST("edit", h.UpdateSensor)          // Update sensor
 		api.DELETE("sensors/:id", h.DeleteSensor) // Delete sensor
 	}
 }
