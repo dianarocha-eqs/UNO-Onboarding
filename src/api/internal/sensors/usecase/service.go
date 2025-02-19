@@ -11,7 +11,7 @@ import (
 
 // SensorService defines the business logic methods for managing sensors.
 type SensorService interface {
-	// CreateSensor creates a new sensor
+	// Creates a new sensor
 	CreateSensor(ctx context.Context, sensor *domain.Sensor, userUuid uuid.UUID) error
 	// DeleteSensor removes a sensor by its ID
 	DeleteSensor(id uint) error
