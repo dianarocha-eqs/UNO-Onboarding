@@ -38,10 +38,10 @@ func (r *AuthRepositoryImpl) StoreToken(ctx context.Context, auth *auth_domain.A
 	query := `
 		BEGIN
 			-- Delete old tokens before inserting a new one
-			DELETE FROM user_tokens WHERE user_id = @user_id;
+			DELETE FROM users_tokens WHERE user_id = @user_id;
 
 			-- Insert new token
-			INSERT INTO user_tokens (user_id, token, is_valid)
+			INSERT INTO users_tokens (user_id, token, is_valid)
 			VALUES (@user_id, @token, 1);
 		END;
 	`
@@ -60,7 +60,7 @@ func (r *AuthRepositoryImpl) StoreToken(ctx context.Context, auth *auth_domain.A
 func (r *AuthRepositoryImpl) GetToken(ctx context.Context, tokenStr string) (*auth_domain.AuthToken, error) {
 	query := `
 		SELECT user_id, token, is_valid
-		FROM user_tokens
+		FROM users_tokens
 		WHERE token = @token
 	`
 
@@ -81,7 +81,7 @@ func (r *AuthRepositoryImpl) GetToken(ctx context.Context, tokenStr string) (*au
 
 func (r *AuthRepositoryImpl) InvalidateToken(ctx context.Context, tokenStr string) error {
 	query := `
-		UPDATE user_tokens
+		UPDATE users_tokens
 		SET is_valid = 0
 		WHERE token = @token
 	`
