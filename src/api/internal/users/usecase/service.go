@@ -29,6 +29,8 @@ type UserService interface {
 	GetRoutesAuthorization(ctx context.Context, tokenStr string, getRole *bool, getUserID *uuid.UUID) error
 	// Reset previous password of user
 	ResetPassword(ctx context.Context, token string, newPassword string) error
+	// Recover user's info to update password
+	RecoverPassword(ctx context.Context, email string) error
 }
 
 // Handles user's logic and interaction with the repository
@@ -162,6 +164,32 @@ func (s *UserServiceImpl) GetRoutesAuthorization(ctx context.Context, tokenStr s
 		return fmt.Errorf("failed to retrieve user id: %v", err)
 	}
 	return err
+}
+
+func (s *UserServiceImpl) RecoverPassword(ctx context.Context, email string) error {
+
+	// GENERATES RANDOM PASSWORD FOR NOW
+	var newPassword, err = utils.GenerateRandomPassword(12)
+	if err != nil {
+		return fmt.Errorf("failed to generate random password: %w", err)
+	}
+
+	var emailSubject string
+	var emailBody string
+	// Email content
+	emailSubject = "Password Reset Request"
+	emailBody = fmt.Sprintf(
+		"Hello,\n\n. This is your new password: %s.",
+		newPassword,
+	)
+
+	// Send email
+	err = utils.CreateEmail(email, emailSubject, emailBody)
+	if err != nil {
+		return fmt.Errorf("failed to create email: %w", err)
+	}
+	return err
+
 }
 
 func (s *UserServiceImpl) ResetPassword(ctx context.Context, token string, newPassword string) error {

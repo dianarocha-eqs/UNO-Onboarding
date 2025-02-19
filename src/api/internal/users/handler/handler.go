@@ -4,8 +4,6 @@ import (
 	auth_service "api/internal/auth/usecase"
 	"api/internal/users/domain"
 	users_service "api/internal/users/usecase"
-	"api/utils"
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -209,27 +207,9 @@ func (h *UserHandlerImpl) RecoverPassword(c *gin.Context) {
 		return
 	}
 
-	// GENERATES RANDOM PASSWORD FOR NOW
-	var newPassword string
-	newPassword, err = utils.GenerateRandomPassword(12)
+	err = h.UserService.RecoverPassword(c.Request.Context(), req.Email)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate password"})
-		return
-	}
-
-	var emailSubject string
-	var emailBody string
-	// Email content
-	emailSubject = "Password Reset Request"
-	emailBody = fmt.Sprintf(
-		"Hello,\n\n. This is your new password: %s.",
-		newPassword,
-	)
-
-	// Send email
-	err = utils.CreateEmail(req.Email, emailSubject, emailBody)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to send new password to email"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "failed to generate password and send it to user's email"})
 		return
 	}
 
