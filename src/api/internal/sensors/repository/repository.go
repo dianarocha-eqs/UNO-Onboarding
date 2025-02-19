@@ -3,6 +3,7 @@ package repository
 import (
 	config "api/configs"
 	"api/internal/sensors/domain"
+	"context"
 	"fmt"
 
 	"database/sql"
@@ -17,8 +18,8 @@ type SensorRepository interface {
 	CreateSensor(sensor *domain.Sensor) error
 	// DeleteSensor removes a sensor from the database by its ID.
 	DeleteSensor(id uint) error
-	// GetAllSensors retrieves all sensors from the database.
-	GetAllSensors() ([]domain.Sensor, error)
+	// Retrieves all sensors from the database.
+	ListSensors(ctx context.Context, search string) ([]domain.Sensor, error)
 	// GetSensorByID retrieves a sensor by its ID from the database.
 	GetSensorByID(id uint) (domain.Sensor, error)
 	// UpdateSensor updates the details of an existing sensor in the database.
@@ -51,22 +52,33 @@ func (r *SensorRepositoryImpl) DeleteSensor(id uint) error {
 	return err
 }
 
-func (r *SensorRepositoryImpl) GetAllSensors() ([]domain.Sensor, error) {
-	query := "SELECT id, name, category, color, description, visibility FROM sensors"
-	rows, err := r.DB.Query(query)
+func (r *SensorRepositoryImpl) ListSensors(ctx context.Context, search string) ([]domain.Sensor, error) {
+	query := `
+		SELECT id, name, category, description
+		FROM Sensor
+		WHERE visibility = true AND name LIKE '%' + @search + @search + '%'
+	`
+
+	rows, err := r.DB.QueryContext(ctx, query,
+		sql.Named("search", search))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to list users: %v", err)
 	}
 	defer rows.Close()
 
 	var sensors []domain.Sensor
 	for rows.Next() {
 		var sensor domain.Sensor
-		if err := rows.Scan(&sensor.ID, &sensor.Name, &sensor.Category, &sensor.Color, &sensor.Description, &sensor.Visibility); err != nil {
-			return nil, err
+		if err := rows.Scan(&sensor.ID, &sensor.Name, &sensor.Category, &sensor.Description); err != nil {
+			return nil, fmt.Errorf("failed to scan sensor: %v", err)
 		}
 		sensors = append(sensors, sensor)
 	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating users: %v", err)
+	}
+
 	return sensors, nil
 }
 

@@ -12,7 +12,7 @@ import (
 // SensorHandler defines the contract for handling sensor-related HTTP requests.
 type SensorHandler interface {
 	// GetSensors handles the retrieval of all sensors.
-	GetSensors(c *gin.Context)
+	ListSensors(c *gin.Context)
 	// GetSensor handles the retrieval of a specific sensor by its ID.
 	GetSensor(c *gin.Context)
 	// AddSensor handles the creation of a new sensor.
@@ -21,6 +21,12 @@ type SensorHandler interface {
 	UpdateSensor(c *gin.Context)
 	// DeleteSensor handles deleting a sensor by its ID.
 	DeleteSensor(c *gin.Context)
+}
+
+// Structure request for list sensors
+type FilterSearch struct {
+	// Search term to filter sensors by name
+	Search string `json:"search"`
 }
 
 // SensorHandler handles HTTP requests related to sensors.
@@ -32,10 +38,11 @@ func NewSensorHandler(service usecase.SensorService) SensorHandler {
 	return &SensorHandlerImpl{Service: service}
 }
 
-func (h *SensorHandlerImpl) GetSensors(c *gin.Context) {
-	sensors, err := h.Service.GetAllSensors()
+func (h *SensorHandlerImpl) ListSensors(c *gin.Context) {
+	var req FilterSearch
+	sensors, err := h.Service.ListSensors(c.Request.Context(), req.Search)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to retrieve sensors"})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to list sensors"})
 		return
 	}
 	c.JSON(http.StatusOK, sensors)
