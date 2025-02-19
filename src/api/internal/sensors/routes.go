@@ -22,7 +22,7 @@ func RegisterSensorRoutes(router *gin.Engine) {
 	// Sensor routes
 	api := router.Group("/v1/sensors/")
 	{
-		api.GET("list", h.ListSensors)            // List all sensors
+		api.POST("list", h.ListSensors)           // List all sensors
 		api.GET("sensors/:id", h.GetSensor)       // Get sensor by ID
 		api.POST("sensors", h.AddSensor)          // Add sensor
 		api.PUT("sensors/:id", h.UpdateSensor)    // Update sensor
