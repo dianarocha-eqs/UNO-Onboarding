@@ -1,11 +1,14 @@
 package routes
 
 import (
+	auth_repository "api/internal/auth/repository"
+	auth_service "api/internal/auth/usecase"
 	"api/internal/sensors/handler"
 	sensor_repository "api/internal/sensors/repository"
 	sensor_service "api/internal/sensors/usecase"
 	users_repository "api/internal/users/repository"
 	users_service "api/internal/users/usecase"
+	"api/utils"
 	"log"
 
 	"github.com/gin-gonic/gin"
@@ -24,18 +27,22 @@ func RegisterSensorRoutes(router *gin.Engine) {
 		log.Fatalf("Failed to create repository: %v", err)
 	}
 
+	authRepo, err := auth_repository.NewAuthRepository()
+	if err != nil {
+		log.Fatalf("Failed to create auth repository: %v", err)
+	}
+
 	userService := users_service.NewUserService(usersRepos)
 	sensorService := sensor_service.NewSensorService(sensorRepo)
+	authService := auth_service.NewAuthService(authRepo, usersRepos)
 
 	h := handler.NewSensorHandler(sensorService, userService)
 
 	// Sensor routes
 	api := router.Group("/v1/sensor")
+	api.Use(utils.AuthMiddleware(authService))
 	{
-		api.GET("sensors", h.GetSensors)          // Get all sensors
-		api.GET("sensors/:id", h.GetSensor)       // Get sensor by ID
-		api.POST("create", h.CreateSensor)        // Add sensor
-		api.PUT("sensors/:id", h.UpdateSensor)    // Update sensor
-		api.DELETE("sensors/:id", h.DeleteSensor) // Delete sensor
+		// Create new sensor
+		api.POST("create", h.CreateSensor)
 	}
 }
