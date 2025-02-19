@@ -161,11 +161,11 @@ func (r *UserRepositoryImpl) GetUserByEmailAndPassword(ctx context.Context, emai
 
 func (r *UserRepositoryImpl) GetRoutesAuthorization(ctx context.Context, tokenStr string, getRole *bool, getUserID *uuid.UUID) error {
 	query := `
-		SELECT user.role, user.id
+		SELECT users.role, users.id
 		FROM users
-		INNER JOIN User_Token
-		ON User_Token.user_id = user.id
-		WHERE User_Token.token = @token
+		INNER JOIN users_tokens
+		ON users_tokens.user_id = users.id
+		WHERE users_tokens.token = @token
 	`
 
 	var role bool
