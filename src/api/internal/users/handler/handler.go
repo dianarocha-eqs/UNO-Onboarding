@@ -53,6 +53,7 @@ type ResetPasswordRequest struct {
 
 // Structure request for recovery password
 type RecoverPasswordRequest struct {
+	// Email of the user
 	Email string `json:"email"`
 }
 
