@@ -53,7 +53,7 @@ func (h *AuthHandlerImpl) Login(c *gin.Context) {
 	}
 
 	// Fetch user by email and password
-	user, err := h.UserService.GetUserByEmailAndPassword(c.Request.Context(), req.Email, hashedpassword)
+	user, err := h.UserService.GetUserByEmailAndPassword(c.Request.Context(), req.Email, hashedpassword, true)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid email or password"})
 		return

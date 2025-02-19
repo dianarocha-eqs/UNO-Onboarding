@@ -19,14 +19,12 @@ type UserRepository interface {
 	UpdateUser(ctx context.Context, user *domain.User) error
 	// Get any users info
 	ListUsers(ctx context.Context, search string, sortDirection int) ([]domain.User, error)
-	// Get user by email and password
-	GetUserByEmailAndPassword(ctx context.Context, email, password string) (*domain.User, error)
+	// Get user by email (and password if strictMode is true)
+	GetUserByEmailAndPassword(ctx context.Context, email, password *string, strictMode bool) (*domain.User, error)
 	// Checks user's role and uuid from token
 	GetRoutesAuthorization(ctx context.Context, tokenStr string, getRole *bool, getUserID *uuid.UUID) error
 	// Updates user's password and deletes token for password reset
 	ResetPassword(ctx context.Context, token string, password string) error
-	// Get user by email
-	GetUserByEmail(ctx context.Context, email string) (*domain.User, error)
 }
 
 // Performs user's data operations using database/sql to interact with the database
@@ -126,18 +124,34 @@ func (r *UserRepositoryImpl) ListUsers(ctx context.Context, search string, sortD
 	return users, nil
 }
 
-func (r *UserRepositoryImpl) GetUserByEmailAndPassword(ctx context.Context, email, password string) (*domain.User, error) {
-	query := `
-		SELECT id, name, email, picture, phone, role
-		FROM User
-		WHERE email = @email AND password = @password
-	`
-	row := r.DB.QueryRowContext(ctx, query, sql.Named("email", email), sql.Named("password", password))
+func (r *UserRepositoryImpl) GetUserByEmailAndPassword(ctx context.Context, email, password *string, strictMode bool) (*domain.User, error) {
+	if strictMode {
+		// Both email and password are required
+		if *email == "" || *password == "" {
+			return nil, fmt.Errorf("email and password are required")
+		}
+	} else {
+		// Only email is required
+		if *email == "" {
+			return nil, fmt.Errorf("email is required")
+		}
+	}
+
+	query := "SELECT id, name, email, picture, phone, role FROM User WHERE email = ?"
+	args := []interface{}{*email}
+
+	if strictMode {
+		query += " AND password = ?"
+		args = append(args, *password)
+	}
+
+	row := r.DB.QueryRowContext(ctx, query, args...)
 	var user domain.User
+
 	err := row.Scan(&user.ID, &user.Name, &user.Email, &user.Picture, &user.Phone, &user.Role)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("invalid email or password")
+			return nil, fmt.Errorf("invalid credentials")
 		}
 		return nil, fmt.Errorf("failed to retrieve user: %v", err)
 	}
@@ -175,25 +189,6 @@ func (r *UserRepositoryImpl) GetRoutesAuthorization(ctx context.Context, tokenSt
 	}
 
 	return nil
-}
-
-func (r *UserRepositoryImpl) GetUserByEmail(ctx context.Context, email string) (*domain.User, error) {
-	query := `
-		SELECT id, name, email, picture, phone, role
-		FROM Users
-		WHERE email = @email 
-	`
-	row := r.DB.QueryRowContext(ctx, query, sql.Named("email", email))
-	var user domain.User
-	err := row.Scan(&user.ID, &user.Name, &user.Email, &user.Picture, &user.Phone, &user.Role)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("invalid email")
-		}
-		return nil, fmt.Errorf("failed to retrieve user id: %v", err)
-	}
-
-	return &user, nil
 }
 
 func (r *UserRepositoryImpl) ResetPassword(ctx context.Context, token string, password string) error {

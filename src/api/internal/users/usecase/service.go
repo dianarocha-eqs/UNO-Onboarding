@@ -24,13 +24,11 @@ type UserService interface {
 	// Get users
 	ListUsers(ctx context.Context, search string, sortDirection int) ([]domain.User, error)
 	// Get user by email and password
-	GetUserByEmailAndPassword(ctx context.Context, email, password string) (*domain.User, error)
+	GetUserByEmailAndPassword(ctx context.Context, email, password string, strictMode bool) (*domain.User, error)
 	// Checks user's role and uuid from token
 	GetRoutesAuthorization(ctx context.Context, tokenStr string, getRole *bool, getUserID *uuid.UUID) error
 	// Reset previous password of user
 	ResetPassword(ctx context.Context, token string, newPassword string) error
-	// Get user by email
-	GetUserByEmail(ctx context.Context, email string) (*domain.User, error)
 }
 
 // Handles user's logic and interaction with the repository
@@ -149,8 +147,8 @@ func (s *UserServiceImpl) ListUsers(ctx context.Context, search string, sortDire
 	return users, nil
 }
 
-func (s *UserServiceImpl) GetUserByEmailAndPassword(ctx context.Context, email, password string) (*domain.User, error) {
-	user, err := s.UserRepository.GetUserByEmailAndPassword(ctx, email, password)
+func (s *UserServiceImpl) GetUserByEmailAndPassword(ctx context.Context, email, password string, strictMode bool) (*domain.User, error) {
+	user, err := s.UserRepository.GetUserByEmailAndPassword(ctx, &email, &password, strictMode)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve user: %v", err)
 	}
@@ -164,15 +162,6 @@ func (s *UserServiceImpl) GetRoutesAuthorization(ctx context.Context, tokenStr s
 		return fmt.Errorf("failed to retrieve user id: %v", err)
 	}
 	return err
-}
-
-func (s *UserServiceImpl) GetUserByEmail(ctx context.Context, email string) (*domain.User, error) {
-	user, err := s.UserRepository.GetUserByEmail(ctx, email)
-	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve user: %v", err)
-	}
-
-	return user, nil
 }
 
 func (s *UserServiceImpl) ResetPassword(ctx context.Context, token string, newPassword string) error {
