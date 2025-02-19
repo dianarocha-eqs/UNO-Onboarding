@@ -16,8 +16,8 @@ type SensorHandler interface {
 	GetSensors(c *gin.Context)
 	// GetSensor handles the retrieval of a specific sensor by its ID.
 	GetSensor(c *gin.Context)
-	// AddSensor handles the creation of a new sensor.
-	AddSensor(c *gin.Context)
+	// Handles the HTTP request to create a new sensor
+	CreateSensor(c *gin.Context)
 	// UpdateSensor handles updating an existing sensor's details.
 	UpdateSensor(c *gin.Context)
 	// DeleteSensor handles deleting a sensor by its ID.
@@ -59,13 +59,13 @@ func (h *SensorHandlerImpl) GetSensor(c *gin.Context) {
 	c.JSON(http.StatusOK, sensor)
 }
 
-func (h *SensorHandlerImpl) AddSensor(c *gin.Context) {
+func (h *SensorHandlerImpl) CreateSensor(c *gin.Context) {
 
 	// Gets token from header
 	tokenAuth, _ := c.Get("token")
 	str := tokenAuth.(string)
 
-	// Get user id from token (set by login) to associate the sensor with user
+	// Get user id from token (set by login)
 	var userUuid, err = h.UserService.GetUserByToken(c.Request.Context(), str)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user"})

@@ -11,10 +11,9 @@ import (
 	_ "github.com/denisenkom/go-mssqldb" // Import SQL Server driver
 )
 
-// SensorRepository defines the methods required to interact with the sensor data storage.
-// It provides basic CRUD operations for managing sensors.
+// Interface for sensor's data operations
 type SensorRepository interface {
-	// CreateSensor adds a new sensor to the database.
+	// Creates a new sensor
 	CreateSensor(ctx context.Context, sensor *domain.Sensor) error
 	// DeleteSensor removes a sensor from the database by its ID.
 	DeleteSensor(id uint) error
@@ -26,8 +25,7 @@ type SensorRepository interface {
 	UpdateSensor(sensor *domain.Sensor) error
 }
 
-// SensorRepositoryImpl is the implementation of the SensorRepository interface.
-// It uses GORM as the database ORM to interact with the database.
+// Performs user's data operations using database/sql to interact with the database
 type SensorRepositoryImpl struct {
 	DB *sql.DB
 }

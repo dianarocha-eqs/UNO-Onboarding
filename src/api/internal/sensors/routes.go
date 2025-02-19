@@ -30,11 +30,11 @@ func RegisterSensorRoutes(router *gin.Engine) {
 	h := handler.NewSensorHandler(sensorService, userService)
 
 	// Sensor routes
-	api := router.Group("/api/")
+	api := router.Group("/v1/sensor")
 	{
 		api.GET("sensors", h.GetSensors)          // Get all sensors
 		api.GET("sensors/:id", h.GetSensor)       // Get sensor by ID
-		api.POST("sensors", h.AddSensor)          // Add sensor
+		api.POST("create", h.CreateSensor)        // Add sensor
 		api.PUT("sensors/:id", h.UpdateSensor)    // Update sensor
 		api.DELETE("sensors/:id", h.DeleteSensor) // Delete sensor
 	}

@@ -9,7 +9,7 @@ import (
 	uuid "github.com/tentone/mssql-uuid"
 )
 
-// SensorService defines the business logic methods for managing sensors.
+// Interface for sensor's services
 type SensorService interface {
 	// Creates a new sensor
 	CreateSensor(ctx context.Context, sensor *domain.Sensor, userUuid uuid.UUID) error
@@ -23,8 +23,7 @@ type SensorService interface {
 	UpdateSensor(sensor *domain.Sensor) error
 }
 
-// SensorServiceImpl is the implementation of the SensorService interface.
-// It uses the SensorRepository for interacting with the underlying data storage.
+// Handles sensor's logic and interaction with the repository
 type SensorServiceImpl struct {
 	Repo repository.SensorRepository
 }
@@ -33,7 +32,7 @@ func NewSensorService(repo repository.SensorRepository) SensorService {
 	return &SensorServiceImpl{Repo: repo}
 }
 
-// Checks the required fields of the Sensor.
+// Checks the required fields of the Sensor
 func validateRequiredFields(sensor *domain.Sensor) error {
 	if sensor.Name == "" || (sensor.Category != domain.TEMPERATURE && sensor.Category != domain.PRESSURE && sensor.Category != domain.HUMIDITY) {
 		return errors.New("name is required and category must be one of the predefined values (Temperature = 0, Humidity = 1, Pressure = 2 )")
