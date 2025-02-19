@@ -43,7 +43,7 @@ func NewUserRepository() (UserRepository, error) {
 
 func (r *UserRepositoryImpl) CreateUser(ctx context.Context, user *domain.User) error {
 	query := `
-		INSERT INTO User (id, name, email, password, picture, phone, role)
+		INSERT INTO users (id, name, email, password, picture, phone, role)
 		VALUES (@id, @name, @email, @password, @picture, @phone, @role)
 	`
 
@@ -65,7 +65,7 @@ func (r *UserRepositoryImpl) CreateUser(ctx context.Context, user *domain.User) 
 
 func (r *UserRepositoryImpl) UpdateUser(ctx context.Context, user *domain.User) error {
 	query := `
-		UPDATE User
+		UPDATE users
 		SET 
 			name = COALESCE(NULLIF(@name, ''), name),
 			email = COALESCE(NULLIF(@email, ''), email),
@@ -92,7 +92,7 @@ func (r *UserRepositoryImpl) UpdateUser(ctx context.Context, user *domain.User) 
 func (r *UserRepositoryImpl) ListUsers(ctx context.Context, search string, sortDirection int) ([]domain.User, error) {
 	query := `
 		SELECT id, name, picture
-		FROM User
+		FROM users
 		WHERE name LIKE '%' + @search + '%' OR email LIKE '%' + @search + '%'
 		ORDER BY CASE WHEN @sortDirection = 1 THEN name END ASC,
 				 CASE WHEN @sortDirection = -1 THEN name END DESC
@@ -162,7 +162,7 @@ func (r *UserRepositoryImpl) GetUserByEmailAndPassword(ctx context.Context, emai
 func (r *UserRepositoryImpl) GetRoutesAuthorization(ctx context.Context, tokenStr string, getRole *bool, getUserID *uuid.UUID) error {
 	query := `
 		SELECT user.role, user.id
-		FROM User
+		FROM users
 		INNER JOIN User_Token
 		ON User_Token.user_id = user.id
 		WHERE User_Token.token = @token
@@ -205,7 +205,7 @@ func (r *UserRepositoryImpl) ResetPassword(ctx context.Context, token string, pa
 	// Gets user id from token
 	query := `
 		SELECT user_id
-		FROM Password_Reset_Tokens
+		FROM password_reset_tokens
 		WHERE token = @token
 	`
 
@@ -221,7 +221,7 @@ func (r *UserRepositoryImpl) ResetPassword(ctx context.Context, token string, pa
 
 	// Updates user's password from id retrived
 	query = `
-		UPDATE User
+		UPDATE users
 		SET password = @password
 		WHERE id = @id
 	`
@@ -234,7 +234,7 @@ func (r *UserRepositoryImpl) ResetPassword(ctx context.Context, token string, pa
 	}
 
 	// Deletes token for this action
-	query = `DELETE FROM Password_Reset_Tokens WHERE token = @token`
+	query = `DELETE FROM password_reset_tokens WHERE token = @token`
 	_, err = tx.ExecContext(ctx, query, sql.Named("token", token))
 	if err != nil {
 		return fmt.Errorf("failed to delete reset token: %v", err)
