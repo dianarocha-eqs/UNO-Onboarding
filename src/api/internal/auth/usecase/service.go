@@ -8,8 +8,6 @@ import (
 	user_repos "api/internal/users/repository"
 	"context"
 	"fmt"
-
-	uuid "github.com/tentone/mssql-uuid"
 )
 
 // Interface for authentication services
@@ -20,10 +18,6 @@ type AuthService interface {
 	InvalidateToken(ctx context.Context, tokenStr string) error
 	// Checks the state of token
 	IsTokenValid(ctx context.Context, tokenStr string) (bool, error)
-	// Get user's password reset token
-	GetUserByPasswordResetToken(ctx context.Context, token string) (uuid.UUID, error)
-	// Delete token
-	DeleteToken(ctx context.Context, token string) error
 }
 
 type AuthServiceImpl struct {
@@ -91,20 +85,4 @@ func (s *AuthServiceImpl) IsTokenValid(ctx context.Context, tokenStr string) (bo
 
 	// Returns the token state (valid or not)
 	return authToken.IsValid, nil
-}
-
-func (s *AuthServiceImpl) GetUserByPasswordResetToken(ctx context.Context, token string) (uuid.UUID, error) {
-	userID, err := s.AuthRepo.GetUserByPasswordResetToken(ctx, token)
-	if err != nil {
-		return uuid.NilUUID, fmt.Errorf("failed to get user by token: %v", err)
-	}
-	return userID, nil
-}
-
-func (s *AuthServiceImpl) DeleteToken(ctx context.Context, token string) error {
-	err := s.AuthRepo.DeteteToken(ctx, token)
-	if err != nil {
-		return fmt.Errorf("failed to delete token")
-	}
-	return nil
 }

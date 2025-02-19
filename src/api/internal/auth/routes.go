@@ -27,7 +27,7 @@ func RegisterAuthRoutes(router *gin.Engine) {
 	}
 
 	authService := auth_service.NewAuthService(authRepo, userRepo)
-	userService := user_service.NewUserService(userRepo)
+	userService := user_service.NewUserService(userRepo, authRepo)
 
 	h := handler.NewAuthHandler(authService, userService)
 
