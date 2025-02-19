@@ -29,7 +29,7 @@ type UserRepository interface {
 	GetUserByEmail(ctx context.Context, email string) (*domain.User, error)
 }
 
-// Performs user's data operations using GORM to interact with the database
+// Performs user's data operations using database/sql to interact with the database
 type UserRepositoryImpl struct {
 	DB *sql.DB
 }

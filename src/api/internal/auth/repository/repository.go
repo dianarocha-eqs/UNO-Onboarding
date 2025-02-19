@@ -22,7 +22,7 @@ type AuthRepository interface {
 	StoreTokenToPasswordRecovery(ctx context.Context, auth *auth_domain.AuthToken) error
 }
 
-// GORM to interact with the token's database
+// database/sql to interact with the token's database
 type AuthRepositoryImpl struct {
 	DB *sql.DB
 }
