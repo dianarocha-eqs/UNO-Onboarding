@@ -10,7 +10,7 @@ import (
 // SensorData represents a recorded data point from a sensor
 type SensorData struct {
 	// Unique identifier for the data entry
-	ID uint `json:"id" gorm:"column:id;primaryKey;autoIncrement"`
+	ID uuid.UUID `json:"id" gorm:"column:id;uniqueidentifier;not null"`
 	// Sensor that recorded this data
 	SensorID uuid.UUID `json:"sensor_id" gorm:"column:sensor_id;type:uniqueidentifier;not null"`
 	// This field establishes a relationship between Sensor and Sensor Data using the foreign key
