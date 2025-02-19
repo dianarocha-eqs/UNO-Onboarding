@@ -1,37 +1,38 @@
 package domain
 
-import "encoding/json"
+import (
+	"api/internal/users/domain"
+
+	uuid "github.com/tentone/mssql-uuid"
+)
+
+const (
+	// Visibility constants
+	PUBLIC  bool = false
+	PRIVATE bool = true
+
+	// Category constants
+	TEMPERATURE int = 0
+	HUMIDITY    int = 1
+	PRESSURE    int = 2
+)
 
 // Sensor represents a device that collects and transmits data about its environment.
 type Sensor struct {
-	// ID is the unique identifier for the sensor.
-	ID uint `json:"id"`
-	// Name is the human-readable name assigned to the sensor.
-	Name string `json:"name"`
-	// Category specifies the type of data the sensor collects, such as Temperature, Humidity, or Pressure.
-	Category string `json:"category"`
-	// Color assigned to the sensor.
-	Color string `json:"color"`
-	// Description provides additional information about the sensor's purpose or functionality.
-	Description string `json:"description"`
-	// Visibility defines whether the sensor is publicly visible or private.
-	Visibility bool `json:"visibility"`
-}
-
-func (s *Sensor) MarshalJSON() ([]byte, error) {
-	type Alias Sensor
-	return json.Marshal(&struct {
-		Visibility int `json:"visibility"`
-		*Alias
-	}{
-		Visibility: boolToInt(s.Visibility),
-		Alias:      (*Alias)(s),
-	})
-}
-
-func boolToInt(b bool) int {
-	if b {
-		return 1
-	}
-	return 0
+	// Unique identifier for the sensor
+	ID uuid.UUID `json:"uuid" gorm:"column:id;type:uniqueidentifier"`
+	// Name of the sensor
+	Name string `json:"name" gorm:"column:name;type:nvarchar(100);not null"`
+	// Category specifies the type of data the sensor collects
+	Category int `json:"category" gorm:"column:category;type:int;not null"`
+	// Color for the sensor, stored as a hex value (e.g., "#FF00FF")
+	Color string `json:"color" gorm:"column:color;type:nvarchar(7);not null"`
+	// Additional information about the sensor's functionality
+	Description string `json:"description" gorm:"column:description;type:nvarchar(255);"`
+	// Visibility: public (false) or private (true)
+	Visibility bool `json:"visibility" gorm:"column:visibility;type:bit;default:1"`
+	// UUID of the user who owns the sensor
+	SensorOwner uuid.UUID `json:"sensor_owner" gorm:"column:sensor_owner;type:uniqueidentifier;not null"`
+	// This field establishes a relationship between Sensor and User using the foreign key
+	User domain.User `json:"user" gorm:"foreignKey:SensorOwner;references:ID;constraint:OnDelete:CASCADE"`
 }

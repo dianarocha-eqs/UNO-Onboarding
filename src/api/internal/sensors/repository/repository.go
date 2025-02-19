@@ -3,6 +3,7 @@ package repository
 import (
 	config "api/configs"
 	"api/internal/sensors/domain"
+	"context"
 	"fmt"
 
 	"database/sql"
@@ -21,8 +22,8 @@ type SensorRepository interface {
 	GetAllSensors() ([]domain.Sensor, error)
 	// GetSensorByID retrieves a sensor by its ID from the database.
 	GetSensorByID(id uint) (domain.Sensor, error)
-	// UpdateSensor updates the details of an existing sensor in the database.
-	UpdateSensor(sensor *domain.Sensor) error
+	// Updates the details of an existing sensor
+	UpdateSensor(ctx context.Context, sensor *domain.Sensor) error
 }
 
 // SensorRepositoryImpl is the implementation of the SensorRepository interface.
@@ -80,8 +81,29 @@ func (r *SensorRepositoryImpl) GetSensorByID(id uint) (domain.Sensor, error) {
 	return sensor, nil
 }
 
-func (r *SensorRepositoryImpl) UpdateSensor(sensor *domain.Sensor) error {
-	query := "UPDATE sensors SET name = ?, category = ?, color = ? , description = ?, visibility = GETDATE() WHERE id = ?"
-	_, err := r.DB.Exec(query, sensor.Name, sensor.Category, sensor.Color, sensor.Description, sensor.Visibility)
-	return err
+func (r *SensorRepositoryImpl) UpdateSensor(ctx context.Context, sensor *domain.Sensor) error {
+
+	query := `
+		UPDATE Sensor
+		SET 
+			name = COALESCE(NULLIF(@name, ''), name),
+			category = COALESCE(NULLIF(@email, ''), category),
+			color = COALESCE(NULLIF(@color, ''), color),
+			description = @description,
+			visibility = COALESCE(NULLIF(@visibility, ''), visibility)
+		WHERE id = @id
+	`
+
+	_, err := r.DB.ExecContext(ctx, query,
+		sql.Named("name", sensor.Name),
+		sql.Named("category", sensor.Category),
+		sql.Named("color", sensor.Color),
+		sql.Named("description", sensor.Description),
+		sql.Named("visibility", sensor.Visibility),
+		sql.Named("id", sensor.SensorOwner),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to update sensor: %v", err)
+	}
+	return nil
 }
