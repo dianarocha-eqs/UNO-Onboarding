@@ -35,18 +35,18 @@ func validateRequiredFields(sensor *domain.Sensor) error {
 
 func (s *SensorServiceImpl) UpdateSensor(ctx context.Context, sensor *domain.Sensor, userUuid uuid.UUID) error {
 
-	if sensor.SensorOwner != userUuid {
-		return fmt.Errorf("user not authorized to edit this sensor details")
+	var stateOwner, err = s.Repo.GetSensorOwner(ctx, sensor.ID, userUuid)
+	if err != nil && !stateOwner {
+		return fmt.Errorf("this sensor is not from this user")
 	}
 
-	var err error
 	if err = validateRequiredFields(sensor); err != nil {
 		return err
 	}
 
 	err = s.Repo.UpdateSensor(ctx, sensor)
 	if err != nil {
-		return fmt.Errorf("failed to update sensor from id %s: %v", sensor.SensorOwner, err)
+		return fmt.Errorf("failed to update sensor on database")
 	}
 
 	return nil

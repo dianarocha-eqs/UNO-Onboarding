@@ -7,12 +7,16 @@ import (
 	"fmt"
 
 	"database/sql"
+
+	uuid "github.com/tentone/mssql-uuid"
 )
 
 // Interface for sensor's data operations
 type SensorRepository interface {
 	// Updates the details of an existing sensor
 	UpdateSensor(ctx context.Context, sensor *domain.Sensor) error
+	// Returns true if sensorID has the same owner as userID
+	GetSensorOwner(ctx context.Context, sensorID uuid.UUID, userID uuid.UUID) (bool, error)
 }
 
 // Performs user's data operations using database/sql to interact with the database
@@ -32,10 +36,10 @@ func NewSensorRepository() (SensorRepository, error) {
 func (r *SensorRepositoryImpl) UpdateSensor(ctx context.Context, sensor *domain.Sensor) error {
 
 	query := `
-		UPDATE Sensor
+		UPDATE sensors
 		SET 
 			name = COALESCE(NULLIF(@name, ''), name),
-			category = COALESCE(NULLIF(@email, ''), category),
+			category = COALESCE(NULLIF(@category, ''), category),
 			color = COALESCE(NULLIF(@color, ''), color),
 			description = @description,
 			visibility = COALESCE(NULLIF(@visibility, ''), visibility)
@@ -54,4 +58,23 @@ func (r *SensorRepositoryImpl) UpdateSensor(ctx context.Context, sensor *domain.
 		return fmt.Errorf("failed to update sensor: %v", err)
 	}
 	return nil
+}
+
+func (r *SensorRepositoryImpl) GetSensorOwner(ctx context.Context, sensorID uuid.UUID, userID uuid.UUID) (bool, error) {
+	query := `
+		SELECT sensor_owner
+		FROM sensors
+		WHERE id = @sensorID
+	`
+
+	var sensorOwner uuid.UUID
+	err := r.DB.QueryRowContext(ctx, query, sql.Named("sensorID", sensorID)).Scan(&sensorOwner)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false, fmt.Errorf("sensor not found")
+		}
+		return false, fmt.Errorf("failed to retrieve sensor owner: %v", err)
+	}
+
+	return sensorOwner == userID, nil
 }
