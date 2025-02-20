@@ -13,14 +13,6 @@ import (
 type SensorService interface {
 	// Creates a new sensor
 	CreateSensor(ctx context.Context, sensor *domain.Sensor, userUuid uuid.UUID) error
-	// DeleteSensor removes a sensor by its ID
-	DeleteSensor(id uint) error
-	// GetAllSensors retrieves all sensors
-	GetAllSensors() ([]domain.Sensor, error)
-	// GetSensorByID retrieves a sensor by its ID
-	GetSensorByID(id uint) (domain.Sensor, error)
-	// UpdateSensor updates an existing sensor
-	UpdateSensor(sensor *domain.Sensor) error
 }
 
 // Handles sensor's logic and interaction with the repository
@@ -68,23 +60,4 @@ func (s *SensorServiceImpl) CreateSensor(ctx context.Context, sensor *domain.Sen
 	}
 
 	return nil
-}
-
-func (s *SensorServiceImpl) UpdateSensor(sensor *domain.Sensor) error {
-	if err := validateRequiredFields(sensor); err != nil {
-		return err
-	}
-	return s.Repo.UpdateSensor(sensor)
-}
-
-func (s *SensorServiceImpl) DeleteSensor(id uint) error {
-	return s.Repo.DeleteSensor(id)
-}
-
-func (s *SensorServiceImpl) GetAllSensors() ([]domain.Sensor, error) {
-	return s.Repo.GetAllSensors()
-}
-
-func (s *SensorServiceImpl) GetSensorByID(id uint) (domain.Sensor, error) {
-	return s.Repo.GetSensorByID(id)
 }
