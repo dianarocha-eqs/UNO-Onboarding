@@ -50,7 +50,7 @@ func (h *SensorHandlerImpl) UpdateSensor(c *gin.Context) {
 
 	err = h.SensorService.UpdateSensor(c.Request.Context(), &sensor, userUuid)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update sensor"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 

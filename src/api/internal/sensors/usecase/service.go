@@ -44,6 +44,17 @@ func (s *SensorServiceImpl) UpdateSensor(ctx context.Context, sensor *domain.Sen
 		return err
 	}
 
+	validColors := map[string]bool{
+		domain.RED:    true,
+		domain.GREEN:  true,
+		domain.BLUE:   true,
+		domain.YELLOW: true,
+	}
+
+	if !validColors[sensor.Color] {
+		return errors.New("cannot change color if not for one of this: must be RED, GREEN, BLUE, or YELLOW")
+	}
+
 	err = s.Repo.UpdateSensor(ctx, sensor)
 	if err != nil {
 		return fmt.Errorf("failed to update sensor on database")
