@@ -52,5 +52,15 @@ func (h *SensorHandlerImpl) ListSensors(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to list sensors"})
 		return
 	}
-	c.JSON(http.StatusOK, sensors)
+
+	var response []gin.H
+	for _, sensor := range sensors {
+		response = append(response, gin.H{
+			"name":       sensor.Name,
+			"category":   sensor.Category,
+			"visibility": sensor.Visibility,
+		})
+	}
+
+	c.JSON(http.StatusOK, response)
 }
