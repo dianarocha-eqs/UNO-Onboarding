@@ -7,14 +7,18 @@ import (
 )
 
 const (
-	// Visibility constants
-	PUBLIC  bool = false
-	PRIVATE bool = true
+	// Color constants
+	SENSOR_COLOR_RED    string = "#FF0000"
+	SENSOR_COLOR_YELLOW string = "#FFFF00"
+	SENSOR_COLOR_GREEN  string = "#00FF00"
+	SENSOR_COLOR_BLUE   string = "#0000FF"
+)
 
+const (
 	// Category constants
-	TEMPERATURE int = 0
-	HUMIDITY    int = 1
-	PRESSURE    int = 2
+	SENSOR_CATEGORY_TEMPERATURE int = 0
+	SENSOR_CATEGORY_HUMIDITY    int = 1
+	SENSOR_CATEGORY_PRESSURE    int = 2
 )
 
 // Sensor represents a device that collects and transmits data about its environment.
@@ -29,10 +33,10 @@ type Sensor struct {
 	Color string `json:"color" gorm:"column:color;type:nvarchar(7);not null"`
 	// Additional information about the sensor's functionality
 	Description string `json:"description" gorm:"column:description;type:nvarchar(255);"`
-	// Visibility: public (false) or private (true)
+	// Visibility: public (true) or private (false)
 	Visibility bool `json:"visibility" gorm:"column:visibility;type:bit;default:1"`
 	// UUID of the user who owns the sensor
-	SensorOwner uuid.UUID `json:"sensor_owner" gorm:"column:sensor_owner;type:uniqueidentifier;not null"`
+	SensorOwnerUuid uuid.UUID `json:"sensorOwnerUuid" gorm:"column:sensorOwnerUuid;type:uniqueidentifier;not null"`
 	// This field establishes a relationship between Sensor and User using the foreign key
-	User domain.User `json:"user" gorm:"foreignKey:SensorOwner;references:ID;constraint:OnDelete:CASCADE"`
+	User domain.User `json:"user" gorm:"foreignKey:SensorOwnerUuid;references:ID;constraint:OnDelete:CASCADE"`
 }
