@@ -8,8 +8,8 @@ import (
 
 const (
 	// Visibility constants
-	PUBLIC  bool = false
-	PRIVATE bool = true
+	PUBLIC  bool = true
+	PRIVATE bool = false
 
 	// Color constants
 	RED    string = "#FF0000"
