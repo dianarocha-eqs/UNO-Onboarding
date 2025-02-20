@@ -32,11 +32,11 @@ func RegisterSensorRoutes(router *gin.Engine) {
 		log.Fatalf("Failed to create auth repository: %v", err)
 	}
 
-	_ = users_service.NewUserService(usersRepos, authRepo)
+	userService := users_service.NewUserService(usersRepos, authRepo)
 	sensorService := sensor_service.NewSensorService(sensorRepo)
 	authService := auth_service.NewAuthService(authRepo, usersRepos)
 
-	h := handler.NewSensorHandler(sensorService)
+	h := handler.NewSensorHandler(sensorService, userService)
 
 	// Sensor routes
 	api := router.Group("/v1/sensor")
