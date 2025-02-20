@@ -15,7 +15,7 @@ const (
 	RED    string = "#FF0000"
 	YELLOW string = "#FFFF00"
 	GREEN  string = "#00FF00"
-	BLUE   string = "#OOOOFF"
+	BLUE   string = "#0000FF"
 
 	// Category constants
 	TEMPERATURE int = 0
