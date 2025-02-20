@@ -35,7 +35,7 @@ func NewSensorService(repo repository.SensorRepository) SensorService {
 // Checks the required fields of the Sensor
 func validateRequiredFields(sensor *domain.Sensor) error {
 	if sensor.Name == "" || (sensor.Category != domain.TEMPERATURE && sensor.Category != domain.PRESSURE && sensor.Category != domain.HUMIDITY) {
-		return errors.New("name is required and category must be one of the predefined values (Temperature = 0, Humidity = 1, Pressure = 2 )")
+		return errors.New("name is required and category must be one of the predefined values: Temperature, Pressure or Humidity")
 	}
 	return nil
 }
@@ -49,12 +49,25 @@ func (s *SensorServiceImpl) CreateSensor(ctx context.Context, sensor *domain.Sen
 
 	sensor.ID = uuid.NewV4()
 	sensor.SensorOwner = userUuid
+
+	validColors := map[string]bool{
+		domain.RED:    true,
+		domain.GREEN:  true,
+		domain.BLUE:   true,
+		domain.YELLOW: true,
+	}
+
+	// color is not required, but if selected one, it needs to be one of the predefined colors
+	if sensor.Color != "" && !validColors[sensor.Color] {
+		return errors.New("invalid color: must be RED, GREEN, BLUE, or YELLOW")
+	}
+
 	err = s.Repo.CreateSensor(ctx, sensor)
 	if err != nil {
 		return errors.New("failed to create sensor")
 	}
 
-	return s.Repo.CreateSensor(ctx, sensor)
+	return nil
 }
 
 func (s *SensorServiceImpl) UpdateSensor(sensor *domain.Sensor) error {

@@ -33,6 +33,7 @@ type SensorHandlerImpl struct {
 func NewSensorHandler(sensorService sensor_service.SensorService, userService user_service.UserService) SensorHandler {
 	return &SensorHandlerImpl{
 		SensorService: sensorService,
+		UserService:   userService,
 	}
 }
 
@@ -62,8 +63,9 @@ func (h *SensorHandlerImpl) GetSensor(c *gin.Context) {
 func (h *SensorHandlerImpl) CreateSensor(c *gin.Context) {
 
 	// Gets token from header
-	tokenAuth, _ := c.Get("token")
-	str := tokenAuth.(string)
+	var tokenAuth, _ = c.Get("token")
+
+	var str = tokenAuth.(string)
 
 	// Get user id from token (set by login)
 	var userUuid, err = h.UserService.GetUserByToken(c.Request.Context(), str)

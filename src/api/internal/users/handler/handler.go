@@ -1,9 +1,9 @@
 package handler
 
 import (
+	auth_service "api/internal/auth/usecase"
 	"api/internal/users/domain"
-	"api/internal/users/usecase"
-	"fmt"
+	users_service "api/internal/users/usecase"
 	"net/http"
 	"strings"
 
@@ -19,28 +19,47 @@ type UserHandler interface {
 	EditUser(c *gin.Context)
 	//  Handles the HTTP request to list users
 	ListUsers(c *gin.Context)
+	// Handles the HTTP request to reset password
+	ResetPassword(c *gin.Context)
 }
 
 // Structure response for list users
 type UserResponse struct {
-	Name    string    `json:"name"`
-	UUID    uuid.UUID `json:"id"`
-	Picture string    `json:"picture"`
+	// Name of the user
+	Name string `json:"name"`
+	// UUID of the user
+	UUID uuid.UUID `json:"id"`
+	// Picture of the user
+	Picture string `json:"picture"`
 }
 
 // Structure request for list users
 type FilterSearchAndSort struct {
+	// Search term to filter users by name or email
 	Search string `json:"search"`
-	Sort   int    `json:"sort"`
+	// Sort direction: 1 for ascending, -1 for descending order
+	Sort int `json:"sort"`
+}
+
+// Structure request for reset password
+type ResetPasswordRequest struct {
+	// Password reset token
+	Token string `json:"token"`
+	// New password to be set for the user
+	Password string `json:"password"`
 }
 
 // Process HTTP requests and interaction with the UserService for user operations
 type UserHandlerImpl struct {
-	Service usecase.UserService
+	UserService users_service.UserService
+	AuthService auth_service.AuthService
 }
 
-func NewUserHandler(service usecase.UserService) UserHandler {
-	return &UserHandlerImpl{Service: service}
+func NewUserHandler(authService auth_service.AuthService, userService users_service.UserService) UserHandler {
+	return &UserHandlerImpl{
+		AuthService: authService,
+		UserService: userService,
+	}
 }
 
 func (h *UserHandlerImpl) AddUser(c *gin.Context) {
@@ -54,7 +73,7 @@ func (h *UserHandlerImpl) AddUser(c *gin.Context) {
 	str := tokenAuth.(string)
 	var role bool
 	// Checks if the role from header is the same as the role given to the user
-	err := h.Service.GetRoutesAuthorization(c.Request.Context(), str, &role, nil)
+	err := h.UserService.GetRoutesAuthorization(c.Request.Context(), str, &role, nil)
 	if err != nil || role != roleAuth {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "current user is not authorized to create a new user"})
 		return
@@ -66,7 +85,7 @@ func (h *UserHandlerImpl) AddUser(c *gin.Context) {
 		return
 	}
 
-	ID, err := h.Service.CreateUser(c.Request.Context(), &user)
+	ID, err := h.UserService.CreateUser(c.Request.Context(), &user)
 	if err != nil {
 		// Check if it's a validation error (missing fields)
 		if strings.Contains(err.Error(), "required fields") || strings.Contains(err.Error(), "invalid email format") || strings.Contains(err.Error(), "invalid phone number format") {
@@ -95,7 +114,7 @@ func (h *UserHandlerImpl) EditUser(c *gin.Context) {
 	var role bool
 	var userID uuid.UUID
 	// Checks if the role or uuid from header is the same as the role and uuid given to/from the user
-	err := h.Service.GetRoutesAuthorization(c.Request.Context(), str, &role, &userID)
+	err := h.UserService.GetRoutesAuthorization(c.Request.Context(), str, &role, &userID)
 	if err != nil || role != roleAuth || userID != uuidAuth {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "current user is not authorized to edit this user"})
 		return
@@ -109,9 +128,8 @@ func (h *UserHandlerImpl) EditUser(c *gin.Context) {
 	}
 
 	// Call UpdateUser service
-	err = h.Service.UpdateUser(c.Request.Context(), &user)
+	err = h.UserService.UpdateUser(c.Request.Context(), &user)
 	if err != nil {
-		fmt.Println(user)
 		// this looks weird but i don't know how different should it be
 		if strings.Contains(err.Error(), "name, email, and phone") {
 			c.JSON(http.StatusForbidden, gin.H{"message": err.Error()})
@@ -134,7 +152,7 @@ func (h *UserHandlerImpl) ListUsers(c *gin.Context) {
 	}
 
 	var users []domain.User
-	users, err = h.Service.ListUsers(c.Request.Context(), filter.Search, filter.Sort)
+	users, err = h.UserService.ListUsers(c.Request.Context(), filter.Search, filter.Sort)
 	if err != nil {
 		// Check specific errors for handling them
 		if strings.Contains(err.Error(), "invalid sort direction") || strings.Contains(err.Error(), "no result was found") {
@@ -157,4 +175,21 @@ func (h *UserHandlerImpl) ListUsers(c *gin.Context) {
 
 	// Return the users in the expected format
 	c.JSON(http.StatusOK, response)
+}
+
+func (h *UserHandlerImpl) ResetPassword(c *gin.Context) {
+
+	var req ResetPasswordRequest
+	var err error
+	if err = c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid token or password"})
+		return
+	}
+
+	if err = h.UserService.ResetPassword(c.Request.Context(), req.Token, req.Password); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.Status(http.StatusOK)
 }
