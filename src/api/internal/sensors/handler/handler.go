@@ -47,9 +47,14 @@ func (h *SensorHandlerImpl) ListSensors(c *gin.Context) {
 	}
 
 	var req FilterSearch
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
 	sensors, err := h.SensorService.ListSensors(c.Request.Context(), userUuid, req.Search)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to list sensors"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 

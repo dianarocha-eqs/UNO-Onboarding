@@ -36,7 +36,7 @@ func (r *SensorRepositoryImpl) ListSensors(ctx context.Context, userID uuid.UUID
 		SELECT id, name, category, description, visibility, sensor_owner
 		FROM sensors
 		WHERE (visibility = 1 OR sensor_owner = @user_id) 
-		  AND (@search = '' OR name LIKE '%' + @search + '%')
+		AND (@search IS NULL OR name LIKE '%' + @search + '%')
 	`
 
 	rows, err := r.DB.QueryContext(ctx, query,
