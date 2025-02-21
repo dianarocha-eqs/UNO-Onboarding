@@ -2,7 +2,6 @@ package utils
 
 import (
 	auth_service "api/internal/auth/usecase"
-	user_domain "api/internal/users/domain"
 	"bytes"
 	"encoding/json"
 	"io"
@@ -19,7 +18,7 @@ func AdminOnly() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		roleStr := c.GetHeader("role")
 		role, err := strconv.ParseBool(roleStr)
-		if err != nil || role != user_domain.ROLE_ADMIN {
+		if err != nil || !role {
 			c.JSON(http.StatusForbidden, gin.H{"error": "only admins can access this route"})
 			c.Abort()
 			return
@@ -32,14 +31,14 @@ func AdminOnly() gin.HandlerFunc {
 // Middleware that allows access to the route only for admins or the user themselves
 func AdminAndUserItself() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		roleStr := c.GetHeader("role")
-		userUUIDStr := c.GetHeader("uuid")
+		var roleStr = c.GetHeader("role")
+		var userUUIDStr = c.GetHeader("uuid")
 
 		var requestBody struct {
 			UUID uuid.UUID `json:"uuid"`
 		}
 
-		bodyBytes, err := io.ReadAll(c.Request.Body)
+		var bodyBytes, err = io.ReadAll(c.Request.Body)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "unable to read request body"})
 			c.Abort()
@@ -77,7 +76,7 @@ func AdminAndUserItself() gin.HandlerFunc {
 
 		if len(roleStr) == 0 {
 			// which means it will not have access (unless it's the own user)
-			role = user_domain.ROLE_USER
+			role = false
 		} else {
 			// changes string value to bool
 			role, err = strconv.ParseBool(roleStr)
@@ -89,7 +88,7 @@ func AdminAndUserItself() gin.HandlerFunc {
 		}
 
 		// Allow access if the user is an admin or the UUID matches
-		if role == user_domain.ROLE_ADMIN || userUUID == requestBody.UUID {
+		if !role || userUUID == requestBody.UUID {
 			c.Set("role", role)
 			c.Set("uuid", userUUID)
 			c.Next()
@@ -104,20 +103,17 @@ func AdminAndUserItself() gin.HandlerFunc {
 func AuthMiddleware(authService auth_service.AuthService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Get the token from Authorization header
-		authHeader := c.GetHeader("Authorization")
+		var authHeader = c.GetHeader("Authorization")
 		if authHeader == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "authorization token required"})
 			c.Abort()
 			return
 		}
 
-		var tokenStr string
-		tokenStr = authHeader
+		var tokenStr = authHeader
 
 		// Validate the token using the service
-		var isValid bool
-		var err error
-		isValid, err = authService.IsTokenValid(c.Request.Context(), tokenStr)
+		var isValid, err = authService.IsTokenValid(c.Request.Context(), tokenStr)
 		if err != nil || !isValid {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
 			c.Abort()

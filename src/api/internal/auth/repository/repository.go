@@ -6,8 +6,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-
-	_ "github.com/denisenkom/go-mssqldb" // Import SQL Server driver
 )
 
 // Interface for token's data operations
@@ -38,17 +36,20 @@ func (r *AuthRepositoryImpl) StoreToken(ctx context.Context, auth *auth_domain.A
 	query := `
 		BEGIN
 			-- Delete old tokens before inserting a new one
-			DELETE FROM users_tokens WHERE user_id = @user_id;
+			DELETE FROM users_tokens WHERE userUuid = @userUuid;
 
 			-- Insert new token
-			INSERT INTO users_tokens (user_id, token, is_valid)
-			VALUES (@user_id, @token, 1);
+			INSERT INTO users_tokens (uuid, userUuid, token, is_valid, created_at, expired_at)
+			VALUES (@uuid, @userUuid, @token, 1, @createdAt, @expiredAt);
 		END;
 	`
 
 	_, err := r.DB.ExecContext(ctx, query,
-		sql.Named("user_id", auth.UserID),
+		sql.Named("userUuid", auth.UserID),
 		sql.Named("token", auth.Token),
+		sql.Named("createdAt", auth.CreatedAt),
+		sql.Named("expiredAt", auth.ExpiredAt),
+		sql.Named("uuid", auth.ID),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to store token: %v", err)
@@ -59,7 +60,7 @@ func (r *AuthRepositoryImpl) StoreToken(ctx context.Context, auth *auth_domain.A
 
 func (r *AuthRepositoryImpl) GetToken(ctx context.Context, tokenStr string) (*auth_domain.AuthToken, error) {
 	query := `
-		SELECT user_id, token, is_valid
+		SELECT userUuid, token, is_valid, created_at, expired_at
 		FROM users_tokens
 		WHERE token = @token
 	`
@@ -68,7 +69,7 @@ func (r *AuthRepositoryImpl) GetToken(ctx context.Context, tokenStr string) (*au
 	row := r.DB.QueryRowContext(ctx, query, sql.Named("token", tokenStr))
 
 	// Scan the result into the authToken struct
-	err := row.Scan(&authToken.UserID, &authToken.Token, &authToken.IsValid)
+	err := row.Scan(&authToken.UserID, &authToken.Token, &authToken.IsValid, &authToken.CreatedAt, &authToken.ExpiredAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("invalid or expired token")
