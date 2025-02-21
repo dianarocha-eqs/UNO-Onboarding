@@ -70,7 +70,7 @@ func (h *UserHandlerImpl) AddUser(c *gin.Context) {
 	// Gets role from header
 	roleAuth, _ := c.Get("role")
 
-	str := tokenAuth.(string)
+	var str = tokenAuth.(string)
 	var role bool
 	// Checks if the role from header is the same as the role given to the user
 	err := h.UserService.GetRoutesAuthorization(c.Request.Context(), str, &role, nil)
@@ -123,7 +123,7 @@ func (h *UserHandlerImpl) EditUser(c *gin.Context) {
 	var user domain.User
 	// Bind JSON to user struct
 	if err := c.ShouldBindJSON(&user); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -132,7 +132,7 @@ func (h *UserHandlerImpl) EditUser(c *gin.Context) {
 	if err != nil {
 		// this looks weird but i don't know how different should it be
 		if strings.Contains(err.Error(), "name, email, and phone") {
-			c.JSON(http.StatusForbidden, gin.H{"message": err.Error()})
+			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
 		} else {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
@@ -159,7 +159,7 @@ func (h *UserHandlerImpl) ListUsers(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch users"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
