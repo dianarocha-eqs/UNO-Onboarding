@@ -4,6 +4,7 @@ import (
 	"api/internal/sensors_data/domain"
 	"api/internal/sensors_data/repository"
 	"context"
+	"fmt"
 )
 
 type SensorDataService interface {
@@ -19,5 +20,9 @@ func NewSensorDataService(repo repository.SensorDataRepository) SensorDataServic
 }
 
 func (s *SensorDataServiceImpl) AddSensorData(ctx context.Context, sensorData *domain.SensorData) error {
-	return s.Repo.AddSensorData(ctx, sensorData)
+	var err = s.Repo.AddSensorData(ctx, sensorData)
+	if err != nil {
+		return fmt.Errorf("failed to create sensor data")
+	}
+	return nil
 }

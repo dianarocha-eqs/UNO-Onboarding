@@ -7,8 +7,6 @@ import (
 	"fmt"
 
 	"database/sql"
-
-	_ "github.com/denisenkom/go-mssqldb" // Import SQL Server driver
 )
 
 type SensorDataRepository interface {
@@ -32,13 +30,13 @@ func NewSensorDataRepository() (SensorDataRepository, error) {
 func (r *SensorDataRepositoryImpl) AddSensorData(ctx context.Context, sensorData *domain.SensorData) error {
 
 	query := `
-		INSERT INTO Sensor_Data (id, sensorUuid, timestamp, value)
+		INSERT INTO SensorData (id, sensorUuid, timestamp, value)
 		VALUES (@id, @sensorUuid, @timestamp, @value)
 	`
 
 	_, err := r.DB.ExecContext(ctx, query,
 		sql.Named("id", sensorData.ID),
-		sql.Named("sensorUuid", sensorData.Sensor),
+		sql.Named("sensorUuid", sensorData.SensorUuid),
 		sql.Named("timestamp", sensorData.Timestamp),
 		sql.Named("value", sensorData.Value),
 	)

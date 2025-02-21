@@ -5,6 +5,7 @@ import (
 
 	routes_authentication "api/internal/auth"
 	routes_sensors "api/internal/sensors"
+	routes_sensors_data "api/internal/sensors_data"
 	routes_users "api/internal/users"
 
 	"github.com/gin-contrib/cors"
@@ -18,6 +19,7 @@ func main() {
 
 	// Sensor routes
 	routes_sensors.RegisterSensorRoutes(router)
+	routes_sensors_data.RegisterSensordataRoutes(router)
 	routes_users.RegisterUsersRoutes(router)
 	routes_authentication.RegisterAuthRoutes(router)
 

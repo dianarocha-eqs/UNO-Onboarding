@@ -8,14 +8,15 @@ import (
 	sensor_service "api/internal/sensors_data/usecase"
 	user_repository "api/internal/users/repository"
 	user_service "api/internal/users/usecase"
-	"api/utils"
+	middleware "api/utils"
+
 	"log"
 
 	"github.com/gin-gonic/gin"
 )
 
 // RegisterSensorRoutes declares the routes that can be accessed for sensor management.
-func RegisterSensorRoutes(router *gin.Engine) {
+func RegisterSensordataRoutes(router *gin.Engine) {
 
 	sensorDataRepo, err := sensor_repository.NewSensorDataRepository()
 	if err != nil {
@@ -40,7 +41,7 @@ func RegisterSensorRoutes(router *gin.Engine) {
 
 	// Sensor routes
 	api := router.Group("/v1/sensor/data/")
-	api.Use(utils.AuthMiddleware(authService))
+	api.Use(middleware.AuthMiddleware(authService))
 	{
 		api.POST("add", h.AddSensorData)
 	}
