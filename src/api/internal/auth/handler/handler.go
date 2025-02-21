@@ -4,6 +4,7 @@ import (
 	auth_service "api/internal/auth/usecase"
 	user_service "api/internal/users/usecase"
 	"api/utils"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -55,6 +56,7 @@ func (h *AuthHandlerImpl) Login(c *gin.Context) {
 	// Fetch user by email and password
 	user, err := h.UserService.GetUserByEmailAndPassword(c.Request.Context(), req.Email, hashedpassword, true)
 	if err != nil {
+		fmt.Print(err)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid email or password"})
 		return
 	}
@@ -62,6 +64,7 @@ func (h *AuthHandlerImpl) Login(c *gin.Context) {
 	// Generate JWT token
 	tokenStr, err := h.AuthService.AddToken(c.Request.Context(), user)
 	if err != nil {
+		fmt.Print(err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to login"})
 		return
 	}

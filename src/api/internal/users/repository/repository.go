@@ -43,12 +43,12 @@ func NewUserRepository() (UserRepository, error) {
 
 func (r *UserRepositoryImpl) CreateUser(ctx context.Context, user *domain.User) error {
 	query := `
-		INSERT INTO users (id, name, email, password, picture, phone, role)
-		VALUES (@id, @name, @email, @password, @picture, @phone, @role)
+		INSERT INTO users (uuid, name, email, password, picture, phone, role)
+		VALUES (@uuid, @name, @email, @password, @picture, @phone, @role)
 	`
 
 	_, err := r.DB.ExecContext(ctx, query,
-		sql.Named("id", user.ID),
+		sql.Named("uuid", user.ID),
 		sql.Named("name", user.Name),
 		sql.Named("email", user.Email),
 		sql.Named("password", user.Password),
@@ -72,7 +72,7 @@ func (r *UserRepositoryImpl) UpdateUser(ctx context.Context, user *domain.User) 
 			phone = COALESCE(NULLIF(@phone, ''), phone),
 			picture = @picture,
 			password = COALESCE(NULLIF(@password, ''), password)
-		WHERE id = @id
+		WHERE uuid = @uuid
 	`
 
 	_, err := r.DB.ExecContext(ctx, query,
@@ -81,7 +81,7 @@ func (r *UserRepositoryImpl) UpdateUser(ctx context.Context, user *domain.User) 
 		sql.Named("phone", user.Phone),
 		sql.Named("picture", user.Picture),
 		sql.Named("password", user.Password),
-		sql.Named("id", user.ID),
+		sql.Named("uuid", user.ID),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to update user: %v", err)
@@ -91,7 +91,7 @@ func (r *UserRepositoryImpl) UpdateUser(ctx context.Context, user *domain.User) 
 
 func (r *UserRepositoryImpl) ListUsers(ctx context.Context, search string, sortDirection int) ([]domain.User, error) {
 	query := `
-		SELECT id, name, picture
+		SELECT uuid, name, picture
 		FROM users
 		WHERE name LIKE '%' + @search + '%' OR email LIKE '%' + @search + '%'
 		ORDER BY CASE WHEN @sortDirection = 1 THEN name END ASC,
@@ -137,7 +137,7 @@ func (r *UserRepositoryImpl) GetUserByEmailAndPassword(ctx context.Context, emai
 		}
 	}
 
-	query := "SELECT id, name, email, picture, phone, role FROM User WHERE email = ?"
+	query := "SELECT uuid, name, email, picture, phone, role FROM users WHERE email = ?"
 	args := []interface{}{*email}
 
 	if strictMode {
@@ -161,10 +161,10 @@ func (r *UserRepositoryImpl) GetUserByEmailAndPassword(ctx context.Context, emai
 
 func (r *UserRepositoryImpl) GetRoutesAuthorization(ctx context.Context, tokenStr string, getRole *bool, getUserID *uuid.UUID) error {
 	query := `
-		SELECT users.role, users.id
+		SELECT users.role, users.uuid
 		FROM users
 		INNER JOIN users_tokens
-		ON users_tokens.user_id = users.id
+		ON users_tokens.userUuid = users.uuid
 		WHERE users_tokens.token = @token
 	`
 

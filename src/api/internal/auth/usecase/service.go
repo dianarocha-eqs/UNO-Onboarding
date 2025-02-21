@@ -8,6 +8,9 @@ import (
 	user_repos "api/internal/users/repository"
 	"context"
 	"fmt"
+	"time"
+
+	uuid "github.com/tentone/mssql-uuid"
 )
 
 // Interface for authentication services
@@ -35,21 +38,28 @@ func NewAuthService(authRepo auth_repos.AuthRepository, userRepo user_repos.User
 }
 
 func (s *AuthServiceImpl) AddToken(ctx context.Context, user *user_domain.User) (string, error) {
-
-	var tokenStr string
-	var err error
 	// Generate JWT token
-	tokenStr, err = jwt.GenerateJWT(user)
+	var tokenStr, err = jwt.GenerateJWT(user)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate token: %v", err)
 	}
 
-	var authToken *auth_domain.AuthToken
+	// Parse the token and retrieve the expiration time from the JWT claims
+	claims, err := jwt.ValidateJWT(tokenStr)
+	if err != nil {
+		return "", fmt.Errorf("failed to validate token: %v", err)
+	}
+
 	// Store token data
-	authToken = &auth_domain.AuthToken{
+	var authToken = &auth_domain.AuthToken{
+		ID:      uuid.NewV4(),
 		UserID:  user.ID,
 		Token:   tokenStr,
 		IsValid: true,
+		// Set the created time
+		CreatedAt: time.Now().UTC(),
+		// Set the expiration time (same as jwt token)
+		ExpiredAt: claims.ExpiresAt.Time,
 	}
 
 	// in database
@@ -62,9 +72,8 @@ func (s *AuthServiceImpl) AddToken(ctx context.Context, user *user_domain.User) 
 }
 
 func (s *AuthServiceImpl) InvalidateToken(ctx context.Context, tokenStr string) error {
-	var err error
 	// Sets token validation to false
-	err = s.AuthRepo.InvalidateToken(ctx, tokenStr)
+	var err = s.AuthRepo.InvalidateToken(ctx, tokenStr)
 	if err != nil {
 		return fmt.Errorf("failed to invalidate token: %v", err)
 	}
@@ -74,13 +83,15 @@ func (s *AuthServiceImpl) InvalidateToken(ctx context.Context, tokenStr string) 
 
 func (s *AuthServiceImpl) IsTokenValid(ctx context.Context, tokenStr string) (bool, error) {
 	// Validate the token first (structure and expiration)
-	_, err := jwt.ValidateJWT(tokenStr)
+	var _, err = jwt.ValidateJWT(tokenStr)
 	if err != nil {
+		fmt.Print(err)
 		return false, fmt.Errorf("invalid or expired JWT: %v", err)
 	}
 
+	var authToken *auth_domain.AuthToken
 	// Retrieve the token from the database
-	authToken, err := s.AuthRepo.GetToken(ctx, tokenStr)
+	authToken, err = s.AuthRepo.GetToken(ctx, tokenStr)
 	if err != nil {
 		return false, fmt.Errorf("failed to get token: %v", err)
 	}
