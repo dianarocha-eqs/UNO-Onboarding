@@ -101,25 +101,23 @@ func (s *AuthServiceImpl) IsTokenValid(ctx context.Context, tokenStr string) (bo
 }
 
 func (s *AuthServiceImpl) AddTokenForPasswordRecovery(ctx context.Context, user *user_domain.User) (string, error) {
-
-	var tokenStr string
-	var err error
-	// Generate JWT token
-	tokenStr, err = jwt.GenerateJWT(user)
+	// Generate a JWT token for password recovery
+	tokenStr, err := jwt.GenerateJWT(user)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate token: %v", err)
 	}
 
-	var authToken *auth_domain.AuthToken
-	// Store token data
-	authToken = &auth_domain.AuthToken{
-		UserID:  user.ID,
-		Token:   tokenStr,
-		IsValid: true,
+	// Parse the token and retrieve the expiration time from the JWT claims
+	claims, err := jwt.ValidateJWT(tokenStr)
+	if err != nil {
+		return "", fmt.Errorf("failed to validate token: %v", err)
 	}
 
-	// in database
-	err = s.AuthRepo.StoreTokenToPasswordRecovery(ctx, authToken)
+	var expirationTime = time.Now().UTC().Add(10 * time.Minute)
+	claims.ExpiresAt.Time = expirationTime
+
+	// Insert the token data into the Users_Tokens table for password recovery
+	err = s.AuthRepo.StoreTokenToPasswordRecovery(ctx, user.ID, tokenStr, expirationTime)
 	if err != nil {
 		return "", fmt.Errorf("failed to store token for password recovery: %v", err)
 	}

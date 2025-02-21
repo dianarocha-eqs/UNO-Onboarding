@@ -6,6 +6,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"time"
 
 	_ "github.com/denisenkom/go-mssqldb" // Import SQL Server driver
 	uuid "github.com/tentone/mssql-uuid"
@@ -125,6 +126,7 @@ func (r *UserRepositoryImpl) ListUsers(ctx context.Context, search string, sortD
 }
 
 func (r *UserRepositoryImpl) GetUserByEmailAndPassword(ctx context.Context, email, password *string, strictMode bool) (*domain.User, error) {
+
 	if strictMode {
 		// Both email and password are required
 		if *email == "" || *password == "" {
@@ -137,17 +139,19 @@ func (r *UserRepositoryImpl) GetUserByEmailAndPassword(ctx context.Context, emai
 		}
 	}
 
-	query := "SELECT uuid, name, email, picture, phone, role FROM users WHERE email = ?"
-	args := []interface{}{*email}
+	query := "SELECT uuid, name, email, picture, phone, role FROM users WHERE email = @email"
+	args := []interface{}{sql.Named("email", *email)}
 
 	if strictMode {
-		query += " AND password = ?"
-		args = append(args, *password)
+		query += " AND password = @password"
+		args = append(args, sql.Named("password", *password))
 	}
 
+	// Execute the query
 	row := r.DB.QueryRowContext(ctx, query, args...)
 	var user domain.User
 
+	// Scan the result into the user object
 	err := row.Scan(&user.ID, &user.Name, &user.Email, &user.Picture, &user.Phone, &user.Role)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -202,42 +206,43 @@ func (r *UserRepositoryImpl) ResetPassword(ctx context.Context, token string, pa
 	// Defer a rollback in case anything fails.
 	defer tx.Rollback()
 
-	// Gets user id from token
+	// Gets user id and expiration date from token
 	query := `
-		SELECT user_id
-		FROM password_reset_tokens
-		WHERE token = @token
+		SELECT userUuid, password_recovery_expiration
+		FROM users_tokens
+		WHERE password_recovery_token = @password_recovery_token 
 	`
 
 	var userUuid uuid.UUID
-	row := r.DB.QueryRowContext(ctx, query, sql.Named("token", token))
-	err = row.Scan(&userUuid)
+	var passwordRecoveryExpiration time.Time
+	row := r.DB.QueryRowContext(ctx, query, sql.Named("password_recovery_token", token))
+	err = row.Scan(&userUuid, &passwordRecoveryExpiration)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return fmt.Errorf("invalid or expired token")
 		}
-		return fmt.Errorf("failed to retrieve user: %v", err)
+		return fmt.Errorf("failed to retrieve user and token data: %v", err)
 	}
 
 	// Updates user's password from id retrived
 	query = `
 		UPDATE users
 		SET password = @password
-		WHERE id = @id
+		WHERE uuid = @uuid
 	`
 	_, err = tx.ExecContext(ctx, query,
 		sql.Named("password", password),
-		sql.Named("id", userUuid),
+		sql.Named("uuid", userUuid),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to update user's password: %v", err)
 	}
 
 	// Deletes token for this action
-	query = `DELETE FROM password_reset_tokens WHERE token = @token`
+	query = `UPDATE users_tokens SET password_recovery_token = NULL, password_recovery_expiration = NULL WHERE password_recovery_token = @token`
 	_, err = tx.ExecContext(ctx, query, sql.Named("token", token))
 	if err != nil {
-		return fmt.Errorf("failed to delete reset token: %v", err)
+		return fmt.Errorf("failed to delete password recovery token: %v", err)
 	}
 
 	if err = tx.Commit(); err != nil {

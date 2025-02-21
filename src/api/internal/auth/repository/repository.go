@@ -6,6 +6,9 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"time"
+
+	uuid "github.com/tentone/mssql-uuid"
 )
 
 // Interface for token's data operations
@@ -17,7 +20,7 @@ type AuthRepository interface {
 	// Sets token to false (invalid)
 	InvalidateToken(ctx context.Context, tokenStr string) error
 	// Stores new token for password recovery
-	StoreTokenToPasswordRecovery(ctx context.Context, auth *auth_domain.AuthToken) error
+	StoreTokenToPasswordRecovery(ctx context.Context, userID uuid.UUID, token string, expirationTime time.Time) error
 }
 
 // database/sql to interact with the token's database
@@ -97,18 +100,23 @@ func (r *AuthRepositoryImpl) InvalidateToken(ctx context.Context, tokenStr strin
 	return nil
 }
 
-func (r *AuthRepositoryImpl) StoreTokenToPasswordRecovery(ctx context.Context, auth *auth_domain.AuthToken) error {
+func (r *AuthRepositoryImpl) StoreTokenToPasswordRecovery(ctx context.Context, userID uuid.UUID, token string, expirationTime time.Time) error {
+	// Insert only the token and expiration time into the Users_Tokens table based on userUuid
 	query := `
-		INSERT INTO password_reset_tokens (user_id, token, is_valid)
-		VALUES (@user_id, @token, 1);
+		UPDATE users_tokens 
+		SET password_recovery_token = @token, 
+			password_recovery_expiration = @expiredAt
+		WHERE userUuid = @userUuid;
 	`
 
 	_, err := r.DB.ExecContext(ctx, query,
-		sql.Named("user_id", auth.UserID),
-		sql.Named("token", auth.Token),
+		sql.Named("userUuid", userID),
+		sql.Named("token", token),
+		sql.Named("expiredAt", expirationTime),
 	)
+
 	if err != nil {
-		return fmt.Errorf("failed to store token: %v", err)
+		return fmt.Errorf("failed to store password recovery token: %v", err)
 	}
 
 	return nil
