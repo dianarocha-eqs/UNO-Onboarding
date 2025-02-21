@@ -9,11 +9,13 @@ import (
 	"database/sql"
 )
 
+// Interface for sensor's data operations
 type SensorDataRepository interface {
 	// Add sensor data
 	AddSensorData(ctx context.Context, sensorData *domain.SensorData) error
 }
 
+// Performs sensors's data operations using database/sql to interact with the database
 type SensorDataRepositoryImpl struct {
 	DB *sql.DB
 }

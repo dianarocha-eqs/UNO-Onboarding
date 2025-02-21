@@ -7,10 +7,12 @@ import (
 	"fmt"
 )
 
+// Interface for sensor's data services
 type SensorDataService interface {
 	AddSensorData(ctx context.Context, sensorData *domain.SensorData) error
 }
 
+// Handles sensor's data logic and interaction with the repository
 type SensorDataServiceImpl struct {
 	Repo repository.SensorDataRepository
 }

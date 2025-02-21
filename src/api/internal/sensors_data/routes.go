@@ -39,10 +39,11 @@ func RegisterSensordataRoutes(router *gin.Engine) {
 
 	h := handler.NewSensorDataHandler(sensorDataService)
 
-	// Sensor routes
+	// Sensor's data routes
 	api := router.Group("/v1/sensor/data/")
 	api.Use(middleware.AuthMiddleware(authService))
 	{
+		// Add sensor's data
 		api.POST("add", h.AddSensorData)
 	}
 }

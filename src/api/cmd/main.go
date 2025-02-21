@@ -17,7 +17,7 @@ func main() {
 	router := gin.Default()
 	router.Use(cors.Default())
 
-	// Sensor routes
+	// All routes
 	routes_sensors.RegisterSensorRoutes(router)
 	routes_sensors_data.RegisterSensordataRoutes(router)
 	routes_users.RegisterUsersRoutes(router)

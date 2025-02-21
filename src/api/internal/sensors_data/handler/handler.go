@@ -11,20 +11,23 @@ import (
 	uuid "github.com/tentone/mssql-uuid"
 )
 
+// Interface for handling HTTP requests related to sensor's data
 type SensorDataHandler interface {
 	AddSensorData(c *gin.Context)
 }
 
 // Structure request for sensor data
 type SensorDataRequest struct {
-	// sensor uuid to associate the data
+	// Uuid of the sensor that recorded the data
 	SensorUuid uuid.UUID `json:"sensorUuid"`
-	// timestamp (x)
-	Timestamp string `json:"timestamp"` // Timestamp in ISO 8601 format (string)
-	// value (y)
+	// Time when the data was recorded by the sensor.
+	// Provided in the ISO 8601 format (string) : "2025-02-21T14:30:00Z" (UTC time)
+	Timestamp string `json:"timestamp"`
+	// Measured value collected by the sensor at the provided timestamp
 	Value float64 `json:"value"`
 }
 
+// Process HTTP requests and interaction with the SensorDataService
 type SensorDataHandlerImpl struct {
 	Service usecase.SensorDataService
 }
