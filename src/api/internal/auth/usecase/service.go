@@ -85,7 +85,6 @@ func (s *AuthServiceImpl) IsTokenValid(ctx context.Context, tokenStr string) (bo
 	// Validate the token first (structure and expiration)
 	var _, err = jwt.ValidateJWT(tokenStr)
 	if err != nil {
-		fmt.Print(err)
 		return false, fmt.Errorf("invalid or expired JWT: %v", err)
 	}
 

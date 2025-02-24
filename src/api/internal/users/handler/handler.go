@@ -4,7 +4,6 @@ import (
 	auth_service "api/internal/auth/usecase"
 	"api/internal/users/domain"
 	users_service "api/internal/users/usecase"
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -199,7 +198,6 @@ func (h *UserHandlerImpl) RecoverPassword(c *gin.Context) {
 	// Fetch user by email and password
 	user, err = h.UserService.GetUserByEmailAndPassword(c.Request.Context(), req.Email, "", false)
 	if err != nil {
-		fmt.Print(err)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid email or password"})
 		return
 	}
