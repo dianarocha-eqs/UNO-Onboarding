@@ -23,8 +23,10 @@ type UserService interface {
 	UpdateUser(ctx context.Context, user *domain.User) error
 	// Get users
 	ListUsers(ctx context.Context, search string, sortDirection int) ([]domain.User, error)
-	// Get user by email and password
-	GetUserByEmailAndPassword(ctx context.Context, email, password string, strictMode bool) (*domain.User, error)
+	// Get user by email
+	GetUserByEmail(ctx context.Context, email string) (*domain.User, error)
+	// Check user's credentials to authenticate
+	AuthenticateUser(ctx context.Context, email, password string) error
 	// Checks user's role and uuid from token
 	GetRoutesAuthorization(ctx context.Context, tokenStr string, getRole *bool, getUserID *uuid.UUID) error
 	// Reset previous password of user
@@ -149,13 +151,21 @@ func (s *UserServiceImpl) ListUsers(ctx context.Context, search string, sortDire
 	return users, nil
 }
 
-func (s *UserServiceImpl) GetUserByEmailAndPassword(ctx context.Context, email, password string, strictMode bool) (*domain.User, error) {
-	user, err := s.UserRepository.GetUserByEmailAndPassword(ctx, &email, &password, strictMode)
+func (s *UserServiceImpl) GetUserByEmail(ctx context.Context, email string) (*domain.User, error) {
+	var user, err = s.UserRepository.GetUserByEmail(ctx, email)
 	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve user: %v", err)
+		return nil, fmt.Errorf("failed to retrieve user by email: %v", err)
 	}
 
 	return user, nil
+}
+
+func (s *UserServiceImpl) AuthenticateUser(ctx context.Context, email, password string) error {
+	var err = s.UserRepository.AuthenticateUser(ctx, email, password)
+	if err != nil {
+		return fmt.Errorf("invalid email or password: %v", err)
+	}
+	return err
 }
 
 func (s *UserServiceImpl) GetRoutesAuthorization(ctx context.Context, tokenStr string, getRole *bool, getUserID *uuid.UUID) error {

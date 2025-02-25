@@ -195,10 +195,10 @@ func (h *UserHandlerImpl) RecoverPassword(c *gin.Context) {
 	}
 
 	var user *domain.User
-	// Fetch user by email and password
-	user, err = h.UserService.GetUserByEmailAndPassword(c.Request.Context(), req.Email, "", false)
+	// Fetch user by email
+	user, err = h.UserService.GetUserByEmail(c.Request.Context(), req.Email)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid email or password"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "failed to get user by email"})
 		return
 	}
 
