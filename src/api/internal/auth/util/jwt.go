@@ -4,7 +4,6 @@ import (
 	"api/configs"
 	"api/internal/users/domain"
 	"errors"
-	"fmt"
 	"log"
 	"time"
 
@@ -65,7 +64,6 @@ func ValidateJWT(tokenString string) (*Claims, error) {
 		return jwtSecret, nil
 	})
 
-	fmt.Print(token.Valid)
 	if err != nil || !token.Valid {
 		return nil, errors.New("invalid token")
 	}

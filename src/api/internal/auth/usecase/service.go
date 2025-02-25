@@ -21,6 +21,8 @@ type AuthService interface {
 	InvalidateToken(ctx context.Context, tokenStr string) error
 	// Checks the state of token
 	IsTokenValid(ctx context.Context, tokenStr string) (bool, error)
+	// Generates the token for password recovery
+	AddTokenForPasswordRecovery(ctx context.Context, user *user_domain.User) (string, error)
 }
 
 type AuthServiceImpl struct {
@@ -83,7 +85,6 @@ func (s *AuthServiceImpl) IsTokenValid(ctx context.Context, tokenStr string) (bo
 	// Validate the token first (structure and expiration)
 	var _, err = jwt.ValidateJWT(tokenStr)
 	if err != nil {
-		fmt.Print(err)
 		return false, fmt.Errorf("invalid or expired JWT: %v", err)
 	}
 
@@ -96,4 +97,29 @@ func (s *AuthServiceImpl) IsTokenValid(ctx context.Context, tokenStr string) (bo
 
 	// Returns the token state (valid or not)
 	return authToken.IsValid, nil
+}
+
+func (s *AuthServiceImpl) AddTokenForPasswordRecovery(ctx context.Context, user *user_domain.User) (string, error) {
+	// Generate a JWT token for password recovery
+	tokenStr, err := jwt.GenerateJWT(user)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate token: %v", err)
+	}
+
+	// Parse the token and retrieve the expiration time from the JWT claims
+	claims, err := jwt.ValidateJWT(tokenStr)
+	if err != nil {
+		return "", fmt.Errorf("failed to validate token: %v", err)
+	}
+
+	var expirationTime = time.Now().UTC().Add(10 * time.Minute)
+	claims.ExpiresAt.Time = expirationTime
+
+	// Insert the token data into the Users_Tokens table for password recovery
+	err = s.AuthRepo.StoreTokenToPasswordRecovery(ctx, user.ID, tokenStr, expirationTime)
+	if err != nil {
+		return "", fmt.Errorf("failed to store token for password recovery: %v", err)
+	}
+
+	return tokenStr, nil
 }

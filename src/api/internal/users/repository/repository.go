@@ -6,6 +6,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"time"
 
 	_ "github.com/denisenkom/go-mssqldb" // Import SQL Server driver
 	uuid "github.com/tentone/mssql-uuid"
@@ -19,15 +20,17 @@ type UserRepository interface {
 	UpdateUser(ctx context.Context, user *domain.User) error
 	// Get any users info
 	ListUsers(ctx context.Context, search string, sortDirection int) ([]domain.User, error)
-	// Get user by email and password
-	GetUserByEmailAndPassword(ctx context.Context, email, password string) (*domain.User, error)
+	// Get user by email
+	GetUserByEmail(ctx context.Context, email string) (*domain.User, error)
+	// Authenticate user through email and password
+	AuthenticateUser(ctx context.Context, email, password string) error
 	// Checks user's role and uuid from token
 	GetRoutesAuthorization(ctx context.Context, tokenStr string, getRole *bool, getUserID *uuid.UUID) error
 	// Updates user's password and deletes token for password reset
 	ResetPassword(ctx context.Context, token string, password string) error
 }
 
-// Performs user's data operations using GORM to interact with the database
+// Performs user's data operations using database/sql to interact with the database
 type UserRepositoryImpl struct {
 	DB *sql.DB
 }
@@ -124,23 +127,38 @@ func (r *UserRepositoryImpl) ListUsers(ctx context.Context, search string, sortD
 	return users, nil
 }
 
-func (r *UserRepositoryImpl) GetUserByEmailAndPassword(ctx context.Context, email, password string) (*domain.User, error) {
-	query := `
-		SELECT uuid, name, email, picture, phone, role
-		FROM users
-		WHERE email = @email AND password = @password
-	`
-	row := r.DB.QueryRowContext(ctx, query, sql.Named("email", email), sql.Named("password", password))
+func (r *UserRepositoryImpl) GetUserByEmail(ctx context.Context, email string) (*domain.User, error) {
+
+	query := "SELECT uuid, name, email, picture, phone, role FROM users WHERE email = @email"
+	row := r.DB.QueryRowContext(ctx, query, sql.Named("email", email))
+
 	var user domain.User
 	err := row.Scan(&user.ID, &user.Name, &user.Email, &user.Picture, &user.Phone, &user.Role)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("invalid email or password")
+			return nil, fmt.Errorf("user not found")
 		}
 		return nil, fmt.Errorf("failed to retrieve user: %v", err)
 	}
 
 	return &user, nil
+}
+
+func (r *UserRepositoryImpl) AuthenticateUser(ctx context.Context, email, password string) error {
+
+	query := "SELECT 1 FROM users WHERE email = @email AND password = @password"
+	row := r.DB.QueryRowContext(ctx, query, sql.Named("email", email), sql.Named("password", password))
+
+	var exists int
+	err := row.Scan(&exists)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return fmt.Errorf("invalid credentials")
+		}
+		return fmt.Errorf("authentication error: %v", err)
+	}
+
+	return nil
 }
 
 func (r *UserRepositoryImpl) GetRoutesAuthorization(ctx context.Context, tokenStr string, getRole *bool, getUserID *uuid.UUID) error {
@@ -186,42 +204,43 @@ func (r *UserRepositoryImpl) ResetPassword(ctx context.Context, token string, pa
 	// Defer a rollback in case anything fails.
 	defer tx.Rollback()
 
-	// Gets user id from token
+	// Gets user id and expiration date from token
 	query := `
-		SELECT user_id
-		FROM password_reset_tokens
-		WHERE token = @token
+		SELECT userUuid, password_recovery_expiration
+		FROM users_tokens
+		WHERE password_recovery_token = @password_recovery_token 
 	`
 
 	var userUuid uuid.UUID
-	row := r.DB.QueryRowContext(ctx, query, sql.Named("token", token))
-	err = row.Scan(&userUuid)
+	var passwordRecoveryExpiration time.Time
+	row := r.DB.QueryRowContext(ctx, query, sql.Named("password_recovery_token", token))
+	err = row.Scan(&userUuid, &passwordRecoveryExpiration)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return fmt.Errorf("invalid or expired token")
 		}
-		return fmt.Errorf("failed to retrieve user: %v", err)
+		return fmt.Errorf("failed to retrieve user and token data: %v", err)
 	}
 
 	// Updates user's password from id retrived
 	query = `
 		UPDATE users
 		SET password = @password
-		WHERE id = @id
+		WHERE uuid = @uuid
 	`
 	_, err = tx.ExecContext(ctx, query,
 		sql.Named("password", password),
-		sql.Named("id", userUuid),
+		sql.Named("uuid", userUuid),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to update user's password: %v", err)
 	}
 
 	// Deletes token for this action
-	query = `DELETE FROM password_reset_tokens WHERE token = @token`
+	query = `UPDATE users_tokens SET password_recovery_token = NULL, password_recovery_expiration = NULL WHERE password_recovery_token = @token`
 	_, err = tx.ExecContext(ctx, query, sql.Named("token", token))
 	if err != nil {
-		return fmt.Errorf("failed to delete reset token: %v", err)
+		return fmt.Errorf("failed to delete password recovery token: %v", err)
 	}
 
 	if err = tx.Commit(); err != nil {

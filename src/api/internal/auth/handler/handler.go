@@ -2,9 +2,9 @@ package handler
 
 import (
 	auth_service "api/internal/auth/usecase"
+	"api/internal/users/domain"
 	user_service "api/internal/users/usecase"
 	"api/utils"
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -53,18 +53,24 @@ func (h *AuthHandlerImpl) Login(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate password hash"})
 	}
 
-	// Fetch user by email and password
-	user, err := h.UserService.GetUserByEmailAndPassword(c.Request.Context(), req.Email, hashedpassword)
+	// Checks if exists a user with those credentials
+	err = h.UserService.AuthenticateUser(c.Request.Context(), req.Email, hashedpassword)
 	if err != nil {
-		fmt.Print(err)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid email or password"})
+		return
+	}
+
+	var user *domain.User
+	// Fetch user by the email given at body
+	user, err = h.UserService.GetUserByEmail(c.Request.Context(), req.Email)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "failed to get user by email"})
 		return
 	}
 
 	// Generate JWT token
 	tokenStr, err := h.AuthService.AddToken(c.Request.Context(), user)
 	if err != nil {
-		fmt.Print(err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to login"})
 		return
 	}
