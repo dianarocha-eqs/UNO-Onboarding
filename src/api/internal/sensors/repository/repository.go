@@ -13,10 +13,12 @@ import (
 
 // Interface for sensor's data operations
 type SensorRepository interface {
+	// Creates a new sensor
+	CreateSensor(ctx context.Context, sensor *domain.Sensor) error
 	// Updates the details of an existing sensor
 	UpdateSensor(ctx context.Context, sensor *domain.Sensor) error
 	// Returns true if sensorID has the same owner as userID
-	GetSensorOwner(ctx context.Context, sensorID uuid.UUID, userID uuid.UUID) (bool, error)
+	GetSensorOwner(ctx context.Context, sensorUuid uuid.UUID, userID uuid.UUID) (bool, error)
 }
 
 // Performs user's data operations using database/sql to interact with the database
@@ -33,6 +35,27 @@ func NewSensorRepository() (SensorRepository, error) {
 	return &SensorRepositoryImpl{DB: db}, nil
 }
 
+func (r *SensorRepositoryImpl) CreateSensor(ctx context.Context, sensor *domain.Sensor) error {
+	query := `
+		INSERT INTO Sensors (uuid, name, category, color, description, visibility, sensorOwnerUuid)
+		VALUES (@uuid, @name, @category, @color, @description, @visibility, @sensorOwnerUuid)
+	`
+
+	_, err := r.DB.ExecContext(ctx, query,
+		sql.Named("uuid", sensor.ID),
+		sql.Named("name", sensor.Name),
+		sql.Named("category", sensor.Category),
+		sql.Named("color", sensor.Color),
+		sql.Named("description", sensor.Description),
+		sql.Named("visibility", sensor.Visibility),
+		sql.Named("sensorOwnerUuid", sensor.SensorOwnerUuid),
+	)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (r *SensorRepositoryImpl) UpdateSensor(ctx context.Context, sensor *domain.Sensor) error {
 
 	query := `
@@ -43,7 +66,7 @@ func (r *SensorRepositoryImpl) UpdateSensor(ctx context.Context, sensor *domain.
 			color = COALESCE(NULLIF(@color, ''), color),
 			description = @description,
 			visibility = COALESCE(NULLIF(@visibility, ''), visibility)
-		WHERE id = @id
+		WHERE uuid = @uuid
 	`
 
 	_, err := r.DB.ExecContext(ctx, query,
@@ -55,26 +78,22 @@ func (r *SensorRepositoryImpl) UpdateSensor(ctx context.Context, sensor *domain.
 		sql.Named("visibility", sensor.Visibility),
 	)
 	if err != nil {
-		return fmt.Errorf("failed to update sensor: %v", err)
+		return err
 	}
 	return nil
 }
 
-func (r *SensorRepositoryImpl) GetSensorOwner(ctx context.Context, sensorID uuid.UUID, userID uuid.UUID) (bool, error) {
+func (r *SensorRepositoryImpl) GetSensorOwner(ctx context.Context, sensorUuid uuid.UUID, userID uuid.UUID) (bool, error) {
 	query := `
-		SELECT sensor_owner
+		SELECT sensorOwnerUuid
 		FROM sensors
-		WHERE id = @sensorID
+		WHERE uuid = @sensorUuid
 	`
 
-	var sensorOwner uuid.UUID
-	err := r.DB.QueryRowContext(ctx, query, sql.Named("sensorID", sensorID)).Scan(&sensorOwner)
+	var sensorOwnerUuid uuid.UUID
+	err := r.DB.QueryRowContext(ctx, query, sql.Named("sensorUuid", sensorUuid)).Scan(&sensorOwnerUuid)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return false, fmt.Errorf("sensor not found")
-		}
-		return false, fmt.Errorf("failed to retrieve sensor owner: %v", err)
+		return false, err
 	}
-
-	return sensorOwner == userID, nil
+	return true, nil
 }

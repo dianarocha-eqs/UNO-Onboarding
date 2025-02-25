@@ -44,5 +44,7 @@ func RegisterSensorRoutes(router *gin.Engine) {
 	{
 		// Update sensor
 		api.POST("edit", h.UpdateSensor)
+		// Create new sensor
+		api.POST("create", h.CreateSensor)
 	}
 }

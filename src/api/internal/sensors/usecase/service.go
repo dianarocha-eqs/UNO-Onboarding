@@ -5,7 +5,6 @@ import (
 	"api/internal/sensors/repository"
 	"context"
 	"errors"
-	"fmt"
 
 	uuid "github.com/tentone/mssql-uuid"
 )
@@ -14,6 +13,8 @@ import (
 type SensorService interface {
 	// Updates an existing sensor
 	UpdateSensor(ctx context.Context, sensor *domain.Sensor, userUuid uuid.UUID) error
+	// Creates a new sensor
+	CreateSensor(ctx context.Context, sensor *domain.Sensor, userUuid uuid.UUID) error
 }
 
 // Handles sensor's logic and interaction with the repository
@@ -27,9 +28,39 @@ func NewSensorService(repo repository.SensorRepository) SensorService {
 
 // Checks the required fields of the Sensor
 func validateRequiredFields(sensor *domain.Sensor) error {
-	if sensor.Name == "" || (sensor.Category != domain.TEMPERATURE && sensor.Category != domain.PRESSURE && sensor.Category != domain.HUMIDITY) {
+	if sensor.Name == "" || (sensor.Category != domain.SENSOR_CATEGORY_TEMPERATURE && sensor.Category != domain.SENSOR_CATEGORY_PRESSURE && sensor.Category != domain.SENSOR_CATEGORY_HUMIDITY) {
 		return errors.New("name is required and category must be one of the predefined values: Temperature, Pressure or Humidity")
 	}
+	return nil
+}
+
+func (s *SensorServiceImpl) CreateSensor(ctx context.Context, sensor *domain.Sensor, userUuid uuid.UUID) error {
+
+	var err error
+	if err = validateRequiredFields(sensor); err != nil {
+		return err
+	}
+
+	sensor.ID = uuid.NewV4()
+	sensor.SensorOwnerUuid = userUuid
+
+	validColors := map[string]bool{
+		domain.SENSOR_COLOR_RED:    true,
+		domain.SENSOR_COLOR_GREEN:  true,
+		domain.SENSOR_COLOR_BLUE:   true,
+		domain.SENSOR_COLOR_YELLOW: true,
+	}
+
+	// color is not required, but if selected one, it needs to be one of the predefined colors
+	if sensor.Color != "" && !validColors[sensor.Color] {
+		return errors.New("invalid color: must be RED, GREEN, BLUE, or YELLOW")
+	}
+
+	err = s.Repo.CreateSensor(ctx, sensor)
+	if err != nil {
+		return errors.New("failed to create sensor")
+	}
+
 	return nil
 }
 
@@ -37,7 +68,7 @@ func (s *SensorServiceImpl) UpdateSensor(ctx context.Context, sensor *domain.Sen
 
 	var stateOwner, err = s.Repo.GetSensorOwner(ctx, sensor.ID, userUuid)
 	if err != nil && !stateOwner {
-		return fmt.Errorf("this sensor is not from this user")
+		return err
 	}
 
 	if err = validateRequiredFields(sensor); err != nil {
@@ -45,10 +76,10 @@ func (s *SensorServiceImpl) UpdateSensor(ctx context.Context, sensor *domain.Sen
 	}
 
 	validColors := map[string]bool{
-		domain.RED:    true,
-		domain.GREEN:  true,
-		domain.BLUE:   true,
-		domain.YELLOW: true,
+		domain.SENSOR_COLOR_RED:    true,
+		domain.SENSOR_COLOR_GREEN:  true,
+		domain.SENSOR_COLOR_BLUE:   true,
+		domain.SENSOR_COLOR_YELLOW: true,
 	}
 
 	if !validColors[sensor.Color] {
@@ -57,7 +88,7 @@ func (s *SensorServiceImpl) UpdateSensor(ctx context.Context, sensor *domain.Sen
 
 	err = s.Repo.UpdateSensor(ctx, sensor)
 	if err != nil {
-		return fmt.Errorf("failed to update sensor on database")
+		return err
 	}
 
 	return nil
