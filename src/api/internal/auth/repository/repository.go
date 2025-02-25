@@ -6,8 +6,9 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"time"
 
-	_ "github.com/denisenkom/go-mssqldb" // Import SQL Server driver
+	uuid "github.com/tentone/mssql-uuid"
 )
 
 // Interface for token's data operations
@@ -18,9 +19,11 @@ type AuthRepository interface {
 	GetToken(ctx context.Context, tokenStr string) (*auth_domain.AuthToken, error)
 	// Sets token to false (invalid)
 	InvalidateToken(ctx context.Context, tokenStr string) error
+	// Stores new token for password recovery
+	StoreTokenToPasswordRecovery(ctx context.Context, userID uuid.UUID, token string, expirationTime time.Time) error
 }
 
-// GORM to interact with the token's database
+// database/sql to interact with the token's database
 type AuthRepositoryImpl struct {
 	DB *sql.DB
 }
@@ -38,17 +41,20 @@ func (r *AuthRepositoryImpl) StoreToken(ctx context.Context, auth *auth_domain.A
 	query := `
 		BEGIN
 			-- Delete old tokens before inserting a new one
-			DELETE FROM users_tokens WHERE user_id = @user_id;
+			DELETE FROM users_tokens WHERE userUuid = @userUuid;
 
 			-- Insert new token
-			INSERT INTO users_tokens (user_id, token, is_valid)
-			VALUES (@user_id, @token, 1);
+			INSERT INTO users_tokens (uuid, userUuid, token, is_valid, created_at, expired_at)
+			VALUES (@uuid, @userUuid, @token, 1, @createdAt, @expiredAt);
 		END;
 	`
 
 	_, err := r.DB.ExecContext(ctx, query,
-		sql.Named("user_id", auth.UserID),
+		sql.Named("userUuid", auth.UserID),
 		sql.Named("token", auth.Token),
+		sql.Named("createdAt", auth.CreatedAt),
+		sql.Named("expiredAt", auth.ExpiredAt),
+		sql.Named("uuid", auth.ID),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to store token: %v", err)
@@ -59,7 +65,7 @@ func (r *AuthRepositoryImpl) StoreToken(ctx context.Context, auth *auth_domain.A
 
 func (r *AuthRepositoryImpl) GetToken(ctx context.Context, tokenStr string) (*auth_domain.AuthToken, error) {
 	query := `
-		SELECT user_id, token, is_valid
+		SELECT userUuid, token, is_valid, created_at, expired_at
 		FROM users_tokens
 		WHERE token = @token
 	`
@@ -68,7 +74,7 @@ func (r *AuthRepositoryImpl) GetToken(ctx context.Context, tokenStr string) (*au
 	row := r.DB.QueryRowContext(ctx, query, sql.Named("token", tokenStr))
 
 	// Scan the result into the authToken struct
-	err := row.Scan(&authToken.UserID, &authToken.Token, &authToken.IsValid)
+	err := row.Scan(&authToken.UserID, &authToken.Token, &authToken.IsValid, &authToken.CreatedAt, &authToken.ExpiredAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("invalid or expired token")
@@ -89,6 +95,28 @@ func (r *AuthRepositoryImpl) InvalidateToken(ctx context.Context, tokenStr strin
 	_, err := r.DB.ExecContext(ctx, query, sql.Named("token", tokenStr))
 	if err != nil {
 		return fmt.Errorf("failed to invalidate token: %v", err)
+	}
+
+	return nil
+}
+
+func (r *AuthRepositoryImpl) StoreTokenToPasswordRecovery(ctx context.Context, userID uuid.UUID, token string, expirationTime time.Time) error {
+	// Insert only the token and expiration time into the Users_Tokens table based on userUuid
+	query := `
+		UPDATE users_tokens 
+		SET password_recovery_token = @token, 
+			password_recovery_expiration = @expiredAt
+		WHERE userUuid = @userUuid;
+	`
+
+	_, err := r.DB.ExecContext(ctx, query,
+		sql.Named("userUuid", userID),
+		sql.Named("token", token),
+		sql.Named("expiredAt", expirationTime),
+	)
+
+	if err != nil {
+		return fmt.Errorf("failed to store password recovery token: %v", err)
 	}
 
 	return nil

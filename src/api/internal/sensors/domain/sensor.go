@@ -1,8 +1,6 @@
 package domain
 
 import (
-	"api/internal/users/domain"
-
 	uuid "github.com/tentone/mssql-uuid"
 )
 
@@ -24,19 +22,17 @@ const (
 // Sensor represents a device that collects and transmits data about its environment.
 type Sensor struct {
 	// Unique identifier for the sensor
-	ID uuid.UUID `json:"uuid" gorm:"column:id;type:uniqueidentifier"`
+	ID uuid.UUID `json:"uuid"`
 	// Name of the sensor
-	Name string `json:"name" gorm:"column:name;type:nvarchar(100);not null"`
+	Name string `json:"name"`
 	// Category specifies the type of data the sensor collects
-	Category int `json:"category" gorm:"column:category;type:int;not null"`
-	// Color for the sensor, stored as a hex value (e.g., "#FF00FF")
-	Color string `json:"color" gorm:"column:color;type:nvarchar(7);not null"`
+	Category int `json:"category"`
+	// Color for the sensor
+	Color string `json:"color"`
 	// Additional information about the sensor's functionality
-	Description string `json:"description" gorm:"column:description;type:nvarchar(255);"`
+	Description string `json:"description"`
 	// Visibility: public (true) or private (false)
-	Visibility bool `json:"visibility" gorm:"column:visibility;type:bit;default:1"`
+	Visibility bool `json:"visibility"`
 	// UUID of the user who owns the sensor
-	SensorOwnerUuid uuid.UUID `json:"sensorOwnerUuid" gorm:"column:sensorOwnerUuid;type:uniqueidentifier;not null"`
-	// This field establishes a relationship between Sensor and User using the foreign key
-	User domain.User `json:"user" gorm:"foreignKey:SensorOwnerUuid;references:ID;constraint:OnDelete:CASCADE"`
+	SensorOwnerUuid uuid.UUID `json:"sensorOwnerUuid"`
 }
