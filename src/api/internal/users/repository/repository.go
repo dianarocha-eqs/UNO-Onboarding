@@ -28,6 +28,8 @@ type UserRepository interface {
 	GetRoutesAuthorization(ctx context.Context, tokenStr string, getRole *bool, getUserID *uuid.UUID) error
 	// Updates user's password and deletes token for password reset
 	ResetPassword(ctx context.Context, token string, password string) error
+	// Get user id by token
+	GetUserByToken(ctx context.Context, tokenStr string) (uuid.UUID, error)
 }
 
 // Performs user's data operations using database/sql to interact with the database
@@ -248,4 +250,26 @@ func (r *UserRepositoryImpl) ResetPassword(ctx context.Context, token string, pa
 	}
 
 	return nil
+}
+
+func (r *UserRepositoryImpl) GetUserByToken(ctx context.Context, tokenStr string) (uuid.UUID, error) {
+	query := `
+		SELECT users.uuid
+		FROM users
+		INNER JOIN users_tokens
+		ON users_tokens.userUuid = users.uuid
+		WHERE users_tokens.token = @token
+	`
+
+	var userUuid uuid.UUID
+	row := r.DB.QueryRowContext(ctx, query, sql.Named("token", tokenStr))
+	err := row.Scan(&userUuid)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return uuid.NilUUID, fmt.Errorf("token not found")
+		}
+		return uuid.NilUUID, fmt.Errorf("failed to retrieve role and user id: %v", err)
+	}
+
+	return userUuid, nil
 }

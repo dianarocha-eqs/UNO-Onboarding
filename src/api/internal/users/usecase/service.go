@@ -33,6 +33,8 @@ type UserService interface {
 	ResetPassword(ctx context.Context, token string, newPassword string) error
 	// Recover user's info to update password
 	RecoverPassword(ctx context.Context, email string) error
+	// Get user by token
+	GetUserByToken(ctx context.Context, tokenStr string) (uuid.UUID, error)
 }
 
 // Handles user's logic and interaction with the repository
@@ -216,4 +218,12 @@ func (s *UserServiceImpl) ResetPassword(ctx context.Context, token string, newPa
 	}
 
 	return nil
+}
+
+func (s *UserServiceImpl) GetUserByToken(ctx context.Context, tokenStr string) (uuid.UUID, error) {
+	var userUuid, err = s.UserRepository.GetUserByToken(ctx, tokenStr)
+	if err != nil {
+		return uuid.NilUUID, fmt.Errorf("failed to retrieve user id: %v", err)
+	}
+	return userUuid, err
 }

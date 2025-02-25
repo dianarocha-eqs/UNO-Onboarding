@@ -3,25 +3,19 @@ package usecase
 import (
 	"api/internal/sensors/domain"
 	"api/internal/sensors/repository"
+	"context"
 	"errors"
+
+	uuid "github.com/tentone/mssql-uuid"
 )
 
-// SensorService defines the business logic methods for managing sensors.
+// Interface for sensor's services
 type SensorService interface {
-	// CreateSensor creates a new sensor
-	CreateSensor(sensor *domain.Sensor) error
-	// DeleteSensor removes a sensor by its ID
-	DeleteSensor(id uint) error
-	// GetAllSensors retrieves all sensors
-	GetAllSensors() ([]domain.Sensor, error)
-	// GetSensorByID retrieves a sensor by its ID
-	GetSensorByID(id uint) (domain.Sensor, error)
-	// UpdateSensor updates an existing sensor
-	UpdateSensor(sensor *domain.Sensor) error
+	// Creates a new sensor
+	CreateSensor(ctx context.Context, sensor *domain.Sensor, userUuid uuid.UUID) error
 }
 
-// SensorServiceImpl is the implementation of the SensorService interface.
-// It uses the SensorRepository for interacting with the underlying data storage.
+// Handles sensor's logic and interaction with the repository
 type SensorServiceImpl struct {
 	Repo repository.SensorRepository
 }
@@ -30,36 +24,40 @@ func NewSensorService(repo repository.SensorRepository) SensorService {
 	return &SensorServiceImpl{Repo: repo}
 }
 
-// Checks the required fields of the Sensor.
-func validateRquiredFields(sensor *domain.Sensor) error {
-	if sensor.Name == "" || sensor.Category == "" {
-		return errors.New("name and category are required")
+// Checks the required fields of the Sensor
+func validateRequiredFields(sensor *domain.Sensor) error {
+	if sensor.Name == "" || (sensor.Category != domain.SENSOR_CATEGORY_TEMPERATURE && sensor.Category != domain.SENSOR_CATEGORY_PRESSURE && sensor.Category != domain.SENSOR_CATEGORY_HUMIDITY) {
+		return errors.New("name is required and category must be one of the predefined values: Temperature, Pressure or Humidity")
 	}
 	return nil
 }
 
-func (s *SensorServiceImpl) CreateSensor(sensor *domain.Sensor) error {
-	if err := validateRquiredFields(sensor); err != nil {
+func (s *SensorServiceImpl) CreateSensor(ctx context.Context, sensor *domain.Sensor, userUuid uuid.UUID) error {
+
+	var err error
+	if err = validateRequiredFields(sensor); err != nil {
 		return err
 	}
-	return s.Repo.CreateSensor(sensor)
-}
 
-func (s *SensorServiceImpl) UpdateSensor(sensor *domain.Sensor) error {
-	if err := validateRquiredFields(sensor); err != nil {
-		return err
+	sensor.ID = uuid.NewV4()
+	sensor.SensorOwnerUuid = userUuid
+
+	validColors := map[string]bool{
+		domain.SENSOR_COLOR_RED:    true,
+		domain.SENSOR_COLOR_GREEN:  true,
+		domain.SENSOR_COLOR_BLUE:   true,
+		domain.SENSOR_COLOR_YELLOW: true,
 	}
-	return s.Repo.UpdateSensor(sensor)
-}
 
-func (s *SensorServiceImpl) DeleteSensor(id uint) error {
-	return s.Repo.DeleteSensor(id)
-}
+	// color is not required, but if selected one, it needs to be one of the predefined colors
+	if sensor.Color != "" && !validColors[sensor.Color] {
+		return errors.New("invalid color: must be RED, GREEN, BLUE, or YELLOW")
+	}
 
-func (s *SensorServiceImpl) GetAllSensors() ([]domain.Sensor, error) {
-	return s.Repo.GetAllSensors()
-}
+	err = s.Repo.CreateSensor(ctx, sensor)
+	if err != nil {
+		return errors.New("failed to create sensor")
+	}
 
-func (s *SensorServiceImpl) GetSensorByID(id uint) (domain.Sensor, error) {
-	return s.Repo.GetSensorByID(id)
+	return nil
 }

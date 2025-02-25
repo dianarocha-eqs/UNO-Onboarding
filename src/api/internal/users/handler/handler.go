@@ -214,7 +214,6 @@ func (h *UserHandlerImpl) RecoverPassword(c *gin.Context) {
 		return
 	}
 
-	// Respond with success
 	c.Status(http.StatusOK)
 }
 
