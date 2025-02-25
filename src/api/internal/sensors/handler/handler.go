@@ -13,6 +13,8 @@ import (
 type SensorHandler interface {
 	// Handles the HTTP request to create a new sensor
 	CreateSensor(c *gin.Context)
+	// Handles the HTTP request to edit sensor
+	EditSensor(c *gin.Context)
 }
 
 // Process HTTP requests and interaction with SensorService/UserService for sensor operations
@@ -49,6 +51,35 @@ func (h *SensorHandlerImpl) CreateSensor(c *gin.Context) {
 	}
 
 	err = h.SensorService.CreateSensor(c.Request.Context(), &sensor, userUuid)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.Status(http.StatusOK)
+}
+
+func (h *SensorHandlerImpl) EditSensor(c *gin.Context) {
+
+	// Gets token from header
+	var tokenAuth, _ = c.Get("token")
+
+	var str = tokenAuth.(string)
+
+	// Get user id from token (set by login)
+	var userUuid, err = h.UserService.GetUserByToken(c.Request.Context(), str)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user"})
+		return
+	}
+
+	var sensor domain.Sensor
+	if err = c.ShouldBindJSON(&sensor); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err = h.SensorService.EditSensor(c.Request.Context(), &sensor, userUuid)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

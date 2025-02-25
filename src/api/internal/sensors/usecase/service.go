@@ -13,6 +13,8 @@ import (
 type SensorService interface {
 	// Creates a new sensor
 	CreateSensor(ctx context.Context, sensor *domain.Sensor, userUuid uuid.UUID) error
+	// Updates an existing sensor
+	EditSensor(ctx context.Context, sensor *domain.Sensor, userUuid uuid.UUID) error
 }
 
 // Handles sensor's logic and interaction with the repository
@@ -57,6 +59,36 @@ func (s *SensorServiceImpl) CreateSensor(ctx context.Context, sensor *domain.Sen
 	err = s.Repo.CreateSensor(ctx, sensor)
 	if err != nil {
 		return errors.New("failed to create sensor")
+	}
+
+	return nil
+}
+
+func (s *SensorServiceImpl) EditSensor(ctx context.Context, sensor *domain.Sensor, userUuid uuid.UUID) error {
+
+	var stateOwner, err = s.Repo.GetSensorOwner(ctx, sensor.ID, userUuid)
+	if err != nil && !stateOwner {
+		return err
+	}
+
+	if err = validateRequiredFields(sensor); err != nil {
+		return err
+	}
+
+	validColors := map[string]bool{
+		domain.SENSOR_COLOR_RED:    true,
+		domain.SENSOR_COLOR_GREEN:  true,
+		domain.SENSOR_COLOR_BLUE:   true,
+		domain.SENSOR_COLOR_YELLOW: true,
+	}
+
+	if !validColors[sensor.Color] {
+		return errors.New("cannot change color if not for one of this: must be RED, GREEN, BLUE, or YELLOW")
+	}
+
+	err = s.Repo.EditSensor(ctx, sensor)
+	if err != nil {
+		return err
 	}
 
 	return nil
