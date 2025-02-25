@@ -15,6 +15,8 @@ type SensorService interface {
 	CreateSensor(ctx context.Context, sensor *domain.Sensor, userUuid uuid.UUID) error
 	// Updates an existing sensor
 	EditSensor(ctx context.Context, sensor *domain.Sensor, userUuid uuid.UUID) error
+	// List all sensors
+	ListSensors(ctx context.Context, userUuid uuid.UUID, search string) ([]domain.Sensor, error)
 }
 
 // Handles sensor's logic and interaction with the repository
@@ -92,4 +94,18 @@ func (s *SensorServiceImpl) EditSensor(ctx context.Context, sensor *domain.Senso
 	}
 
 	return nil
+}
+
+func (s *SensorServiceImpl) ListSensors(ctx context.Context, userUuid uuid.UUID, search string) ([]domain.Sensor, error) {
+
+	var sensors, err = s.Repo.ListSensors(ctx, userUuid, search)
+	if err != nil {
+		return nil, errors.New("failed to retrieve sensors")
+	}
+
+	if search != "" && len(sensors) == 0 {
+		return nil, errors.New("no result was found")
+	}
+
+	return sensors, nil
 }

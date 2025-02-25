@@ -42,6 +42,8 @@ func RegisterSensorRoutes(router *gin.Engine) {
 	api := router.Group("/v1/sensor")
 	api.Use(utils.AuthMiddleware(authService))
 	{
+		// List sensors
+		api.POST("list", h.ListSensors)
 		// Update sensor
 		api.POST("edit", h.EditSensor)
 		// Create new sensor

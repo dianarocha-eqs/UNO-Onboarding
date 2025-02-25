@@ -19,6 +19,8 @@ type SensorRepository interface {
 	EditSensor(ctx context.Context, sensor *domain.Sensor) error
 	// Returns true if sensorID has the same owner as userID
 	GetSensorOwner(ctx context.Context, sensorUuid uuid.UUID, userID uuid.UUID) (bool, error)
+	// Retrieves all sensors from the database.
+	ListSensors(ctx context.Context, userID uuid.UUID, search string) ([]domain.Sensor, error)
 }
 
 // Performs user's data operations using database/sql to interact with the database
@@ -96,4 +98,37 @@ func (r *SensorRepositoryImpl) GetSensorOwner(ctx context.Context, sensorUuid uu
 		return false, err
 	}
 	return true, nil
+}
+
+func (r *SensorRepositoryImpl) ListSensors(ctx context.Context, userID uuid.UUID, search string) ([]domain.Sensor, error) {
+	query := `
+		SELECT uuid, name, category, description, visibility, SensorOwnerUuid
+		FROM sensors
+		WHERE (visibility = 1 OR SensorOwnerUuid = @userUuid) 
+		AND (@search IS NULL OR name LIKE '%' + @search + '%')
+	`
+
+	rows, err := r.DB.QueryContext(ctx, query,
+		sql.Named("userUuid", userID),
+		sql.Named("search", search),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list sensors: %v", err)
+	}
+	defer rows.Close()
+
+	var sensors []domain.Sensor
+	for rows.Next() {
+		var sensor domain.Sensor
+		if err := rows.Scan(&sensor.ID, &sensor.Name, &sensor.Category, &sensor.Description, &sensor.Visibility, &sensor.SensorOwnerUuid); err != nil {
+			return nil, fmt.Errorf("failed to scan sensor: %v", err)
+		}
+		sensors = append(sensors, sensor)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating sensors: %v", err)
+	}
+
+	return sensors, nil
 }

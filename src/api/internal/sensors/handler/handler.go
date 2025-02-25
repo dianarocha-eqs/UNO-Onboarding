@@ -11,10 +11,18 @@ import (
 
 // Interface for handling HTTP requests related to sensors
 type SensorHandler interface {
+	// GetSensors handles the retrieval of all sensors.
+	ListSensors(c *gin.Context)
 	// Handles the HTTP request to create a new sensor
 	CreateSensor(c *gin.Context)
 	// Handles the HTTP request to edit sensor
 	EditSensor(c *gin.Context)
+}
+
+// Structure request for list sensors
+type FilterSearch struct {
+	// Search term to filter sensors by name
+	Search string `json:"search"`
 }
 
 // Process HTTP requests and interaction with SensorService/UserService for sensor operations
@@ -86,4 +94,42 @@ func (h *SensorHandlerImpl) EditSensor(c *gin.Context) {
 	}
 
 	c.Status(http.StatusOK)
+}
+
+func (h *SensorHandlerImpl) ListSensors(c *gin.Context) {
+
+	// Gets token from header
+	var tokenAuth, _ = c.Get("token")
+
+	var str = tokenAuth.(string)
+
+	// Get user id from token (set by login)
+	var userUuid, err = h.UserService.GetUserByToken(c.Request.Context(), str)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user"})
+		return
+	}
+
+	var req FilterSearch
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	sensors, err := h.SensorService.ListSensors(c.Request.Context(), userUuid, req.Search)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	var response []gin.H
+	for _, sensor := range sensors {
+		response = append(response, gin.H{
+			"name":       sensor.Name,
+			"category":   sensor.Category,
+			"visibility": sensor.Visibility,
+		})
+	}
+
+	c.JSON(http.StatusOK, response)
 }
