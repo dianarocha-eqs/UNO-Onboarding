@@ -26,7 +26,7 @@ func NewSensorService(repo repository.SensorRepository) SensorService {
 
 // Checks the required fields of the Sensor
 func validateRequiredFields(sensor *domain.Sensor) error {
-	if sensor.Name == "" || (sensor.Category != domain.TEMPERATURE && sensor.Category != domain.PRESSURE && sensor.Category != domain.HUMIDITY) {
+	if sensor.Name == "" || (sensor.Category != domain.SENSOR_CATEGORY_TEMPERATURE && sensor.Category != domain.SENSOR_CATEGORY_PRESSURE && sensor.Category != domain.SENSOR_CATEGORY_HUMIDITY) {
 		return errors.New("name is required and category must be one of the predefined values: Temperature, Pressure or Humidity")
 	}
 	return nil
@@ -40,13 +40,13 @@ func (s *SensorServiceImpl) CreateSensor(ctx context.Context, sensor *domain.Sen
 	}
 
 	sensor.ID = uuid.NewV4()
-	sensor.SensorOwner = userUuid
+	sensor.SensorOwnerUuid = userUuid
 
 	validColors := map[string]bool{
-		domain.RED:    true,
-		domain.GREEN:  true,
-		domain.BLUE:   true,
-		domain.YELLOW: true,
+		domain.SENSOR_COLOR_RED:    true,
+		domain.SENSOR_COLOR_GREEN:  true,
+		domain.SENSOR_COLOR_BLUE:   true,
+		domain.SENSOR_COLOR_YELLOW: true,
 	}
 
 	// color is not required, but if selected one, it needs to be one of the predefined colors

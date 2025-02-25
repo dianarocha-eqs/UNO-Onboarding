@@ -31,18 +31,18 @@ func NewSensorRepository() (SensorRepository, error) {
 
 func (r *SensorRepositoryImpl) CreateSensor(ctx context.Context, sensor *domain.Sensor) error {
 	query := `
-		INSERT INTO Sensors (id, name, category, color, description, visibility, sensor_owner)
-		VALUES (@id, @name, @category, @color, @description, @visibility, @sensor_owner)
+		INSERT INTO Sensors (uuid, name, category, color, description, visibility, sensorOwnerUuid)
+		VALUES (@uuid, @name, @category, @color, @description, @visibility, @sensorOwnerUuid)
 	`
 
 	_, err := r.DB.ExecContext(ctx, query,
-		sql.Named("id", sensor.ID),
+		sql.Named("uuid", sensor.ID),
 		sql.Named("name", sensor.Name),
 		sql.Named("category", sensor.Category),
 		sql.Named("color", sensor.Color),
 		sql.Named("description", sensor.Description),
 		sql.Named("visibility", sensor.Visibility),
-		sql.Named("sensor_owner", sensor.SensorOwner),
+		sql.Named("sensorOwnerUuid", sensor.SensorOwnerUuid),
 	)
 
 	if err != nil {

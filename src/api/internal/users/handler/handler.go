@@ -19,6 +19,8 @@ type UserHandler interface {
 	EditUser(c *gin.Context)
 	//  Handles the HTTP request to list users
 	ListUsers(c *gin.Context)
+	// Handles the HTTP request to recover password
+	RecoverPassword(c *gin.Context)
 	// Handles the HTTP request to reset password
 	ResetPassword(c *gin.Context)
 }
@@ -49,6 +51,12 @@ type ResetPasswordRequest struct {
 	Password string `json:"password"`
 }
 
+// Structure request for recovery password
+type RecoverPasswordRequest struct {
+	// Email of the user
+	Email string `json:"email"`
+}
+
 // Process HTTP requests and interaction with the UserService for user operations
 type UserHandlerImpl struct {
 	UserService users_service.UserService
@@ -70,7 +78,7 @@ func (h *UserHandlerImpl) AddUser(c *gin.Context) {
 	// Gets role from header
 	roleAuth, _ := c.Get("role")
 
-	str := tokenAuth.(string)
+	var str = tokenAuth.(string)
 	var role bool
 	// Checks if the role from header is the same as the role given to the user
 	err := h.UserService.GetRoutesAuthorization(c.Request.Context(), str, &role, nil)
@@ -123,7 +131,7 @@ func (h *UserHandlerImpl) EditUser(c *gin.Context) {
 	var user domain.User
 	// Bind JSON to user struct
 	if err := c.ShouldBindJSON(&user); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -132,7 +140,7 @@ func (h *UserHandlerImpl) EditUser(c *gin.Context) {
 	if err != nil {
 		// this looks weird but i don't know how different should it be
 		if strings.Contains(err.Error(), "name, email, and phone") {
-			c.JSON(http.StatusForbidden, gin.H{"message": err.Error()})
+			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
 		} else {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
@@ -159,7 +167,7 @@ func (h *UserHandlerImpl) ListUsers(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch users"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -175,6 +183,38 @@ func (h *UserHandlerImpl) ListUsers(c *gin.Context) {
 
 	// Return the users in the expected format
 	c.JSON(http.StatusOK, response)
+}
+
+func (h *UserHandlerImpl) RecoverPassword(c *gin.Context) {
+
+	var req RecoverPasswordRequest
+	var err error
+	if err = c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid email"})
+		return
+	}
+
+	var user *domain.User
+	// Fetch user by email
+	user, err = h.UserService.GetUserByEmail(c.Request.Context(), req.Email)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "failed to get user by email"})
+		return
+	}
+
+	_, err = h.AuthService.AddTokenForPasswordRecovery(c.Request.Context(), user)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "failed to add token for password recovery"})
+		return
+	}
+
+	err = h.UserService.RecoverPassword(c.Request.Context(), req.Email)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "failed to generate password and send it to user's email"})
+		return
+	}
+
+	c.Status(http.StatusOK)
 }
 
 func (h *UserHandlerImpl) ResetPassword(c *gin.Context) {

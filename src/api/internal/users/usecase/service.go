@@ -23,12 +23,16 @@ type UserService interface {
 	UpdateUser(ctx context.Context, user *domain.User) error
 	// Get users
 	ListUsers(ctx context.Context, search string, sortDirection int) ([]domain.User, error)
-	// Get user by email and password
-	GetUserByEmailAndPassword(ctx context.Context, email, password string) (*domain.User, error)
+	// Get user by email
+	GetUserByEmail(ctx context.Context, email string) (*domain.User, error)
+	// Check user's credentials to authenticate
+	AuthenticateUser(ctx context.Context, email, password string) error
 	// Checks user's role and uuid from token
 	GetRoutesAuthorization(ctx context.Context, tokenStr string, getRole *bool, getUserID *uuid.UUID) error
 	// Reset previous password of user
 	ResetPassword(ctx context.Context, token string, newPassword string) error
+	// Recover user's info to update password
+	RecoverPassword(ctx context.Context, email string) error
 	// Get user by token
 	GetUserByToken(ctx context.Context, tokenStr string) (uuid.UUID, error)
 }
@@ -149,13 +153,21 @@ func (s *UserServiceImpl) ListUsers(ctx context.Context, search string, sortDire
 	return users, nil
 }
 
-func (s *UserServiceImpl) GetUserByEmailAndPassword(ctx context.Context, email, password string) (*domain.User, error) {
-	user, err := s.UserRepository.GetUserByEmailAndPassword(ctx, email, password)
+func (s *UserServiceImpl) GetUserByEmail(ctx context.Context, email string) (*domain.User, error) {
+	var user, err = s.UserRepository.GetUserByEmail(ctx, email)
 	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve user: %v", err)
+		return nil, fmt.Errorf("failed to retrieve user by email: %v", err)
 	}
 
 	return user, nil
+}
+
+func (s *UserServiceImpl) AuthenticateUser(ctx context.Context, email, password string) error {
+	var err = s.UserRepository.AuthenticateUser(ctx, email, password)
+	if err != nil {
+		return fmt.Errorf("invalid email or password: %v", err)
+	}
+	return err
 }
 
 func (s *UserServiceImpl) GetRoutesAuthorization(ctx context.Context, tokenStr string, getRole *bool, getUserID *uuid.UUID) error {
@@ -164,6 +176,32 @@ func (s *UserServiceImpl) GetRoutesAuthorization(ctx context.Context, tokenStr s
 		return fmt.Errorf("failed to retrieve user id: %v", err)
 	}
 	return err
+}
+
+func (s *UserServiceImpl) RecoverPassword(ctx context.Context, email string) error {
+
+	// GENERATES RANDOM PASSWORD FOR NOW
+	var newPassword, err = utils.GenerateRandomPassword(12)
+	if err != nil {
+		return fmt.Errorf("failed to generate random password: %w", err)
+	}
+
+	var emailSubject string
+	var emailBody string
+	// Email content
+	emailSubject = "Password Reset Request"
+	emailBody = fmt.Sprintf(
+		"Hello,\n\n. This is your new password: %s.",
+		newPassword,
+	)
+
+	// Send email
+	err = utils.CreateEmail(email, emailSubject, emailBody)
+	if err != nil {
+		return fmt.Errorf("failed to create email: %w", err)
+	}
+	return err
+
 }
 
 func (s *UserServiceImpl) ResetPassword(ctx context.Context, token string, newPassword string) error {
