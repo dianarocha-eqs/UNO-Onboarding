@@ -1,37 +1,38 @@
 package domain
 
-import "encoding/json"
+import (
+	uuid "github.com/tentone/mssql-uuid"
+)
+
+const (
+	// Color constants
+	SENSOR_COLOR_RED    string = "#FF0000"
+	SENSOR_COLOR_YELLOW string = "#FFFF00"
+	SENSOR_COLOR_GREEN  string = "#00FF00"
+	SENSOR_COLOR_BLUE   string = "#0000FF"
+)
+
+const (
+	// Category constants
+	SENSOR_CATEGORY_TEMPERATURE int = 0
+	SENSOR_CATEGORY_HUMIDITY    int = 1
+	SENSOR_CATEGORY_PRESSURE    int = 2
+)
 
 // Sensor represents a device that collects and transmits data about its environment.
 type Sensor struct {
-	// ID is the unique identifier for the sensor.
-	ID uint `json:"id"`
-	// Name is the human-readable name assigned to the sensor.
+	// Unique identifier for the sensor
+	ID uuid.UUID `json:"uuid"`
+	// Name of the sensor
 	Name string `json:"name"`
-	// Category specifies the type of data the sensor collects, such as Temperature, Humidity, or Pressure.
-	Category string `json:"category"`
-	// Color assigned to the sensor.
+	// Category specifies the type of data the sensor collects
+	Category int `json:"category"`
+	// Color for the sensor
 	Color string `json:"color"`
-	// Description provides additional information about the sensor's purpose or functionality.
+	// Additional information about the sensor's functionality
 	Description string `json:"description"`
-	// Visibility defines whether the sensor is publicly visible or private.
+	// Visibility: public (true) or private (false)
 	Visibility bool `json:"visibility"`
-}
-
-func (s *Sensor) MarshalJSON() ([]byte, error) {
-	type Alias Sensor
-	return json.Marshal(&struct {
-		Visibility int `json:"visibility"`
-		*Alias
-	}{
-		Visibility: boolToInt(s.Visibility),
-		Alias:      (*Alias)(s),
-	})
-}
-
-func boolToInt(b bool) int {
-	if b {
-		return 1
-	}
-	return 0
+	// UUID of the user who owns the sensor
+	SensorOwnerUuid uuid.UUID `json:"sensorOwnerUuid"`
 }
