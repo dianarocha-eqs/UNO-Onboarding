@@ -11,10 +11,10 @@ import (
 
 // Interface for sensor's services
 type SensorService interface {
-	// Updates an existing sensor
-	UpdateSensor(ctx context.Context, sensor *domain.Sensor, userUuid uuid.UUID) error
 	// Creates a new sensor
 	CreateSensor(ctx context.Context, sensor *domain.Sensor, userUuid uuid.UUID) error
+	// Updates an existing sensor
+	EditSensor(ctx context.Context, sensor *domain.Sensor, userUuid uuid.UUID) error
 }
 
 // Handles sensor's logic and interaction with the repository
@@ -64,7 +64,7 @@ func (s *SensorServiceImpl) CreateSensor(ctx context.Context, sensor *domain.Sen
 	return nil
 }
 
-func (s *SensorServiceImpl) UpdateSensor(ctx context.Context, sensor *domain.Sensor, userUuid uuid.UUID) error {
+func (s *SensorServiceImpl) EditSensor(ctx context.Context, sensor *domain.Sensor, userUuid uuid.UUID) error {
 
 	var stateOwner, err = s.Repo.GetSensorOwner(ctx, sensor.ID, userUuid)
 	if err != nil && !stateOwner {
@@ -86,7 +86,7 @@ func (s *SensorServiceImpl) UpdateSensor(ctx context.Context, sensor *domain.Sen
 		return errors.New("cannot change color if not for one of this: must be RED, GREEN, BLUE, or YELLOW")
 	}
 
-	err = s.Repo.UpdateSensor(ctx, sensor)
+	err = s.Repo.EditSensor(ctx, sensor)
 	if err != nil {
 		return err
 	}

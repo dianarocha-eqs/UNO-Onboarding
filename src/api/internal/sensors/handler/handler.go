@@ -14,7 +14,7 @@ type SensorHandler interface {
 	// Handles the HTTP request to create a new sensor
 	CreateSensor(c *gin.Context)
 	// Handles the HTTP request to edit sensor
-	UpdateSensor(c *gin.Context)
+	EditSensor(c *gin.Context)
 }
 
 // Process HTTP requests and interaction with SensorService/UserService for sensor operations
@@ -59,7 +59,7 @@ func (h *SensorHandlerImpl) CreateSensor(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
-func (h *SensorHandlerImpl) UpdateSensor(c *gin.Context) {
+func (h *SensorHandlerImpl) EditSensor(c *gin.Context) {
 
 	// Gets token from header
 	var tokenAuth, _ = c.Get("token")
@@ -79,7 +79,7 @@ func (h *SensorHandlerImpl) UpdateSensor(c *gin.Context) {
 		return
 	}
 
-	err = h.SensorService.UpdateSensor(c.Request.Context(), &sensor, userUuid)
+	err = h.SensorService.EditSensor(c.Request.Context(), &sensor, userUuid)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

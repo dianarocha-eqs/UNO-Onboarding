@@ -16,7 +16,7 @@ type SensorRepository interface {
 	// Creates a new sensor
 	CreateSensor(ctx context.Context, sensor *domain.Sensor) error
 	// Updates the details of an existing sensor
-	UpdateSensor(ctx context.Context, sensor *domain.Sensor) error
+	EditSensor(ctx context.Context, sensor *domain.Sensor) error
 	// Returns true if sensorID has the same owner as userID
 	GetSensorOwner(ctx context.Context, sensorUuid uuid.UUID, userID uuid.UUID) (bool, error)
 }
@@ -56,7 +56,7 @@ func (r *SensorRepositoryImpl) CreateSensor(ctx context.Context, sensor *domain.
 	return nil
 }
 
-func (r *SensorRepositoryImpl) UpdateSensor(ctx context.Context, sensor *domain.Sensor) error {
+func (r *SensorRepositoryImpl) EditSensor(ctx context.Context, sensor *domain.Sensor) error {
 
 	query := `
 		UPDATE sensors
