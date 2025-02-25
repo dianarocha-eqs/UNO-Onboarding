@@ -8,8 +8,6 @@ import (
 
 // SensorData represents a recorded data point from a sensor
 type SensorData struct {
-	// Unique identifier for the data entry
-	ID uuid.UUID `json:"uuid"`
 	// UUID of the sensor that recorded this data
 	SensorUuid uuid.UUID `json:"sensorUuid"`
 	// Timestamp when the data was recorded
