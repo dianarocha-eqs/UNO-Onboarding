@@ -2,129 +2,134 @@ package handler
 
 import (
 	"api/internal/sensors/domain"
-	"api/internal/sensors/usecase"
+	sensor_service "api/internal/sensors/usecase"
+	user_service "api/internal/users/usecase"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
 
-// SensorHandler defines the contract for handling sensor-related HTTP requests.
+// Interface for handling HTTP requests related to sensors
 type SensorHandler interface {
 	// GetSensors handles the retrieval of all sensors.
-	GetSensors(c *gin.Context)
-	// GetSensor handles the retrieval of a specific sensor by its ID.
-	GetSensor(c *gin.Context)
-	// AddSensor handles the creation of a new sensor.
-	AddSensor(c *gin.Context)
-	// UpdateSensor handles updating an existing sensor's details.
-	UpdateSensor(c *gin.Context)
-	// DeleteSensor handles deleting a sensor by its ID.
-	DeleteSensor(c *gin.Context)
+	ListSensors(c *gin.Context)
+	// Handles the HTTP request to create a new sensor
+	CreateSensor(c *gin.Context)
+	// Handles the HTTP request to edit sensor
+	EditSensor(c *gin.Context)
 }
 
-// SensorHandler handles HTTP requests related to sensors.
+// Structure request for list sensors
+type FilterSearch struct {
+	// Search term to filter sensors by name
+	Search string `json:"search"`
+}
+
+// Process HTTP requests and interaction with SensorService/UserService for sensor operations
 type SensorHandlerImpl struct {
-	Service usecase.SensorService
+	SensorService sensor_service.SensorService
+	UserService   user_service.UserService
 }
 
-func NewSensorHandler(service usecase.SensorService) SensorHandler {
-	return &SensorHandlerImpl{Service: service}
+func NewSensorHandler(sensorService sensor_service.SensorService, userService user_service.UserService) SensorHandler {
+	return &SensorHandlerImpl{
+		SensorService: sensorService,
+		UserService:   userService,
+	}
 }
 
-func (h *SensorHandlerImpl) GetSensors(c *gin.Context) {
-	sensors, err := h.Service.GetAllSensors()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to retrieve sensors"})
-		return
-	}
-	c.JSON(http.StatusOK, sensors)
-}
+func (h *SensorHandlerImpl) CreateSensor(c *gin.Context) {
 
-func (h *SensorHandlerImpl) GetSensor(c *gin.Context) {
-	id, err := strconv.Atoi(c.Param("id"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
-		return
-	}
-	sensor, err := h.Service.GetSensorByID(uint(id))
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Sensor not found"})
-		return
-	}
-	c.JSON(http.StatusOK, sensor)
-}
+	// Gets token from header
+	var tokenAuth, _ = c.Get("token")
 
-func (h *SensorHandlerImpl) AddSensor(c *gin.Context) {
-	var sensor domain.Sensor
-	if err := c.ShouldBindJSON(&sensor); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
+	var str = tokenAuth.(string)
 
-	err := h.Service.CreateSensor(&sensor)
+	// Get user id from token (set by login)
+	var userUuid, err = h.UserService.GetUserByToken(c.Request.Context(), str)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create sensor"})
-		return
-	}
-
-	c.JSON(http.StatusCreated, sensor)
-}
-
-func (h *SensorHandlerImpl) UpdateSensor(c *gin.Context) {
-	id, err := strconv.Atoi(c.Param("id"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
-		return
-	}
-
-	existingSensor, err := h.Service.GetSensorByID(uint(id))
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"message": "Sensor not found"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user"})
 		return
 	}
 
 	var sensor domain.Sensor
-	if err := c.ShouldBindJSON(&sensor); err != nil {
+	if err = c.ShouldBindJSON(&sensor); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+
+	err = h.SensorService.CreateSensor(c.Request.Context(), &sensor, userUuid)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.Status(http.StatusOK)
+}
+
+func (h *SensorHandlerImpl) EditSensor(c *gin.Context) {
+
+	// Gets token from header
+	var tokenAuth, _ = c.Get("token")
+
+	var str = tokenAuth.(string)
+
+	// Get user id from token (set by login)
+	var userUuid, err = h.UserService.GetUserByToken(c.Request.Context(), str)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user"})
+		return
+	}
+
+	var sensor domain.Sensor
+	if err = c.ShouldBindJSON(&sensor); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	if sensor.Name != existingSensor.Name {
-		existingSensor.Name = sensor.Name
-	}
-	if sensor.Category != existingSensor.Category {
-		existingSensor.Category = sensor.Category
-	}
-
-	if sensor.Description != existingSensor.Description {
-		existingSensor.Description = sensor.Description
-	}
-
-	if sensor.Visibility != existingSensor.Visibility {
-		existingSensor.Visibility = sensor.Visibility
-	}
-
-	err = h.Service.UpdateSensor(&existingSensor)
+	err = h.SensorService.EditSensor(c.Request.Context(), &sensor, userUuid)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to update sensor"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, existingSensor)
+	c.Status(http.StatusOK)
 }
 
-func (h *SensorHandlerImpl) DeleteSensor(c *gin.Context) {
-	id, err := strconv.Atoi(c.Param("id"))
+func (h *SensorHandlerImpl) ListSensors(c *gin.Context) {
+
+	// Gets token from header
+	var tokenAuth, _ = c.Get("token")
+
+	var str = tokenAuth.(string)
+
+	// Get user id from token (set by login)
+	var userUuid, err = h.UserService.GetUserByToken(c.Request.Context(), str)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user"})
 		return
 	}
 
-	err = h.Service.DeleteSensor(uint(id))
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete sensor"})
+	var req FilterSearch
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message": "Sensor deleted"})
+
+	sensors, err := h.SensorService.ListSensors(c.Request.Context(), userUuid, req.Search)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	var response []gin.H
+	for _, sensor := range sensors {
+		response = append(response, gin.H{
+			"name":       sensor.Name,
+			"category":   sensor.Category,
+			"visibility": sensor.Visibility,
+		})
+	}
+
+	c.JSON(http.StatusOK, response)
 }
