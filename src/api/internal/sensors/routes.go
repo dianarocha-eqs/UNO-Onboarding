@@ -43,7 +43,7 @@ func RegisterSensorRoutes(router *gin.Engine) {
 	api.Use(utils.AuthMiddleware(authService))
 	{
 		// Update sensor
-		api.POST("edit", h.UpdateSensor)
+		api.POST("edit", h.EditSensor)
 		// Create new sensor
 		api.POST("create", h.CreateSensor)
 	}
