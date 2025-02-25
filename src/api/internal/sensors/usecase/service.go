@@ -100,7 +100,7 @@ func (s *SensorServiceImpl) ListSensors(ctx context.Context, userUuid uuid.UUID,
 
 	var sensors, err = s.Repo.ListSensors(ctx, userUuid, search)
 	if err != nil {
-		return nil, errors.New("failed to retrieve users")
+		return nil, errors.New("failed to retrieve sensors")
 	}
 
 	if search != "" && len(sensors) == 0 {
