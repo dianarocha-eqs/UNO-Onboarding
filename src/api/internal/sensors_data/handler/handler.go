@@ -20,11 +20,12 @@ type SensorDataHandler interface {
 type SensorDataRequest struct {
 	// Uuid of the sensor that recorded the data
 	SensorUuid uuid.UUID `json:"sensorUuid"`
-	// Time when the data was recorded by the sensor.
-	// Provided in the ISO 8601 format (string) : "2025-02-21T14:30:00Z" (UTC time)
-	Timestamp string `json:"timestamp"`
-	// Measured value collected by the sensor at the provided timestamp
-	Value float64 `json:"value"`
+	// Array of timestamp-value pairs
+	Readings []struct {
+		// ISO 8601 format
+		Timestamp string  `json:"timestamp"`
+		Value     float64 `json:"value"`
+	} `json:"readings"`
 }
 
 // Process HTTP requests and interaction with the SensorDataService
@@ -44,34 +45,40 @@ func (h *SensorDataHandlerImpl) AddSensorData(c *gin.Context) {
 		return
 	}
 
-	// Convert the timestamp from ISO 8601 format (string) to time.Time
-	timestamp, err := time.Parse(time.RFC3339, req.Timestamp)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid timestamp format, should be ISO 8601"})
+	if len(req.Readings) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "At least one sensor data is required"})
 		return
 	}
 
-	sensorData := &domain.SensorData{
-		ID:         uuid.NewV4(),
-		SensorUuid: req.SensorUuid,
-		Timestamp:  timestamp,
-		Value:      req.Value,
+	var sensorDataList []*domain.SensorData
+	var responseData [][]float64
+
+	for _, reading := range req.Readings {
+		// Convert timestamp string to time.Time
+		timestamp, err := time.Parse(time.RFC3339, reading.Timestamp)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Invalid timestamp format: %s", reading.Timestamp)})
+			return
+		}
+
+		sensorData := &domain.SensorData{
+			SensorUuid: req.SensorUuid,
+			Timestamp:  timestamp,
+			Value:      req.Readings[1].Value,
+		}
+
+		sensorDataList = append(sensorDataList, sensorData)
+		responseData = append(responseData, []float64{float64(timestamp.Unix()), reading.Value})
 	}
 
-	err = h.Service.AddSensorData(c.Request.Context(), sensorData)
+	var err = h.Service.AddSensorData(c.Request.Context(), sensorDataList)
 	if err != nil {
-		fmt.Print(err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Prepare the response format
-	responseData := [][]float64{
-		{float64(sensorData.Timestamp.Unix()), sensorData.Value},
-	}
-
 	c.JSON(http.StatusOK, gin.H{
-		"uuid": sensorData.ID,
+		"uuid": req.SensorUuid,
 		"data": responseData,
 	})
 }

@@ -14,7 +14,6 @@ func CreateEmail(to, subject, body string) error {
 	if err != nil {
 		return fmt.Errorf("failed to load email configuration: %v", err)
 	}
-	fmt.Printf("Email config: %+v\n", config.Email) // Debugging line
 
 	// Access email configuration
 	emailConfig := config.Email

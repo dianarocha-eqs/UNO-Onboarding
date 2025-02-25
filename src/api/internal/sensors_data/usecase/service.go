@@ -9,7 +9,8 @@ import (
 
 // Interface for sensor's data services
 type SensorDataService interface {
-	AddSensorData(ctx context.Context, sensorData *domain.SensorData) error
+	// Add sensor data
+	AddSensorData(ctx context.Context, sensorData []*domain.SensorData) error
 }
 
 // Handles sensor's data logic and interaction with the repository
@@ -21,10 +22,10 @@ func NewSensorDataService(repo repository.SensorDataRepository) SensorDataServic
 	return &SensorDataServiceImpl{Repo: repo}
 }
 
-func (s *SensorDataServiceImpl) AddSensorData(ctx context.Context, sensorData *domain.SensorData) error {
+func (s *SensorDataServiceImpl) AddSensorData(ctx context.Context, sensorData []*domain.SensorData) error {
 	var err = s.Repo.AddSensorData(ctx, sensorData)
 	if err != nil {
-		return fmt.Errorf("failed to create sensor data")
+		return fmt.Errorf("failed to add sensor data")
 	}
 	return nil
 }
