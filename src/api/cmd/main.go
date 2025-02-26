@@ -5,6 +5,7 @@ import (
 
 	routes_authentication "api/internal/auth"
 	routes_sensors "api/internal/sensors"
+	routes_sensors_data "api/internal/sensors_data"
 	routes_users "api/internal/users"
 	"api/version"
 
@@ -32,8 +33,9 @@ func main() {
 	router := gin.Default()
 	router.Use(cors.Default())
 
-	// Sensor routes
+	// All routes
 	routes_sensors.RegisterSensorRoutes(router)
+	routes_sensors_data.RegisterSensordataRoutes(router)
 	routes_users.RegisterUsersRoutes(router)
 	routes_authentication.RegisterAuthRoutes(router)
 
