@@ -87,8 +87,6 @@ func NewUserHandler(authService auth_service.AuthService, userService users_serv
 // @Failure 400 {string} string "Missing fields, invalid email, etc."
 // @Failure 401 {string} string "User is not allowed to create a new user"
 // @Failure 500 {string} string "Failed at creating user"
-//
-// @Router /v1/users/create [post]
 func (h *UserHandlerImpl) AddUser(c *gin.Context) {
 
 	// Gets token from header
@@ -144,8 +142,6 @@ func (h *UserHandlerImpl) AddUser(c *gin.Context) {
 // @Failure 400 {string}  string "Missing fields, invalid body format, etc."
 // @Failure 401 {string} string "User is not allowed to edit this user"
 // @Failure 500 {string} string "Failed at editing user"
-//
-// @Router /v1/users/edit [post]
 func (h *UserHandlerImpl) EditUser(c *gin.Context) {
 
 	// Gets token from header
@@ -199,7 +195,6 @@ func (h *UserHandlerImpl) EditUser(c *gin.Context) {
 // @Success     200 {object} UserResponse "Ok"
 // @Failure 400 {string}  string "Invalid body format, or sort direction, etc."
 // @Failure 500 {string} string "Failed at listing users"
-// @Router /v1/users/list [post]
 func (h *UserHandlerImpl) ListUsers(c *gin.Context) {
 
 	var filter FilterSearchAndSort
@@ -245,7 +240,6 @@ func (h *UserHandlerImpl) ListUsers(c *gin.Context) {
 // @Success      200              {string}  string    "Ok"
 // @Failure 400 {string}  string "Invalid body format"
 // @Failure 500 {string} string "User does not exists, failed at adding new token for password recovery or failed to recover password"
-// @Router /v1/users/forgot-password [post]
 func (h *UserHandlerImpl) RecoverPassword(c *gin.Context) {
 
 	var req RecoverPasswordRequest
@@ -288,7 +282,6 @@ func (h *UserHandlerImpl) RecoverPassword(c *gin.Context) {
 // @Success      200              {string}  string    "Ok"
 // @Failure 400 {string}  string "Invalid body format"
 // @Failure 500 {string} string "Failed to reset password"
-// @Router /v1/users/change-password [post]
 func (h *UserHandlerImpl) ResetPassword(c *gin.Context) {
 
 	var req ResetPasswordRequest
