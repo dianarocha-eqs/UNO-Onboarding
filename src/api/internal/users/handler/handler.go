@@ -70,13 +70,24 @@ func NewUserHandler(authService auth_service.AuthService, userService users_serv
 	}
 }
 
-// AddUser godoc
+// AddUser handles the creation of a new user.
 // @Summary Create a new user
-// @Description Create a user (admin only)
+//
+// @Description Creates a new user at least with the required fields (name, email and phone)
+// @Description Requires authorization with a valid token and matching role from the header.
+//
 // @Tags users
 // @Accept json
 // @Produce json
+// @Param Authorization header string true "Bearer Token"
+// @Param role header bool false "User role authorization"
 // @Param user body domain.User true "User Data"
+//
+// @Success 201 {object} string "Returns the created user UUID"
+// @Failure 400 {string} string "Missing fields, invalid email, etc."
+// @Failure 401 {string} string "User is not allowed to create a new user"
+// @Failure 500 {string} string "Failed at creating user"
+//
 // @Router /v1/users/create [post]
 func (h *UserHandlerImpl) AddUser(c *gin.Context) {
 
@@ -91,7 +102,7 @@ func (h *UserHandlerImpl) AddUser(c *gin.Context) {
 	// Checks if the role from header is the same as the role given to the user
 	err := h.UserService.GetRoutesAuthorization(c.Request.Context(), str, &role, nil)
 	if err != nil || role != roleAuth {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "current user is not authorized to create a new user"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Current user is not authorized to create a new user"})
 		return
 	}
 
@@ -116,12 +127,24 @@ func (h *UserHandlerImpl) AddUser(c *gin.Context) {
 }
 
 // EditUser godoc
-// @Summary Edit a user
-// @Description Edit a user's information (admin or user themselves)
+// @Summary Edit user's information
+//
+// @Description Edit the user's information only if the required fields are not set to empty, except picture
+// @Description Requires authorization with a valid token and matching role or uuid from the header.
+//
 // @Tags users
 // @Accept json
 // @Produce json
+// @Param Authorization header string true "Bearer Token"
+// @Param role header bool false "User role authorization"
+// @Param uuid header string false "User uuid authorization"
 // @Param user body domain.User true "User Data"
+//
+// @Success      200              {string}  string    "Ok"
+// @Failure 400 {string}  string "Missing fields, invalid body format, etc."
+// @Failure 401 {string} string "User is not allowed to edit this user"
+// @Failure 500 {string} string "Failed at editing user"
+//
 // @Router /v1/users/edit [post]
 func (h *UserHandlerImpl) EditUser(c *gin.Context) {
 
@@ -140,7 +163,7 @@ func (h *UserHandlerImpl) EditUser(c *gin.Context) {
 	// Checks if the role or uuid from header is the same as the role and uuid given to/from the user
 	err := h.UserService.GetRoutesAuthorization(c.Request.Context(), str, &role, &userID)
 	if err != nil || role != roleAuth || userID != uuidAuth {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "current user is not authorized to edit this user"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Current user is not authorized to edit this user"})
 		return
 	}
 
@@ -156,7 +179,7 @@ func (h *UserHandlerImpl) EditUser(c *gin.Context) {
 	if err != nil {
 		// this looks weird but i don't know how different should it be
 		if strings.Contains(err.Error(), "name, email, and phone") {
-			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		} else {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
@@ -167,20 +190,22 @@ func (h *UserHandlerImpl) EditUser(c *gin.Context) {
 }
 
 // ListUsers godoc
-// @Summary List users
-// @Description List all users with optional filtering and sorting
+// @Summary List user's information
+//
+// @Description Lists user's information based on the search value (either by name or email) and sort direction (sorted by name)
+//
 // @Tags users
-// @Accept json
-// @Produce json
-// @Param filter body handler.FilterSearchAndSort true "Filter and Sort Parameters"
-// @Success 200 {array} handler.UserResponse "List of users"
+// @Param data body FilterSearchAndSort true "User Data"
+// @Success     200 {object} UserResponse "Ok"
+// @Failure 400 {string}  string "Invalid body format, or sort direction, etc."
+// @Failure 500 {string} string "Failed at listing users"
 // @Router /v1/users/list [post]
 func (h *UserHandlerImpl) ListUsers(c *gin.Context) {
 
 	var filter FilterSearchAndSort
 	var err error
 	if err = c.ShouldBindJSON(&filter); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -210,12 +235,23 @@ func (h *UserHandlerImpl) ListUsers(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
+// RecoverPassword godoc
+// @Summary Recover's user password through email
+//
+// @Description Sets random password for user and send's an email with the new password for user's email
+//
+// @Tags users
+// @Param data body RecoverPasswordRequest true "Recover password with email"
+// @Success      200              {string}  string    "Ok"
+// @Failure 400 {string}  string "Invalid body format"
+// @Failure 500 {string} string "User does not exists, failed at adding new token for password recovery or failed to recover password"
+// @Router /v1/users/forgot-password [post]
 func (h *UserHandlerImpl) RecoverPassword(c *gin.Context) {
 
 	var req RecoverPasswordRequest
 	var err error
 	if err = c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid email"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -223,31 +259,42 @@ func (h *UserHandlerImpl) RecoverPassword(c *gin.Context) {
 	// Fetch user by email
 	user, err = h.UserService.GetUserByEmail(c.Request.Context(), req.Email)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "failed to get user by email"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "user does not exist"})
 		return
 	}
 
 	_, err = h.AuthService.AddTokenForPasswordRecovery(c.Request.Context(), user)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "failed to add token for password recovery"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to add token for password recovery"})
 		return
 	}
 
 	err = h.UserService.RecoverPassword(c.Request.Context(), req.Email)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "failed to generate password and send it to user's email"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate password and send it to user's email"})
 		return
 	}
 
 	c.Status(http.StatusOK)
 }
 
+// ResetPassword godoc
+// @Summary Reset's user password by receiving the token and password from recovery method
+//
+// @Description Updates the user's password and deletes token
+//
+// @Tags users
+// @Param data body ResetPasswordRequest true "Reset password with token and new password"
+// @Success      200              {string}  string    "Ok"
+// @Failure 400 {string}  string "Invalid body format"
+// @Failure 500 {string} string "Failed to reset password"
+// @Router /v1/users/change-password [post]
 func (h *UserHandlerImpl) ResetPassword(c *gin.Context) {
 
 	var req ResetPasswordRequest
 	var err error
 	if err = c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid token or password"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
