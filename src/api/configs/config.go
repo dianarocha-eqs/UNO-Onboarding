@@ -41,7 +41,7 @@ type Config struct {
 }
 
 // ConfigFilePath is the relative path to the configuration JSON file.
-const ConfigFilePath = "../configs/config.json"
+const ConfigFilePath = "configs/config.json"
 
 // LoadConfig reads and parses the configuration file
 func LoadConfig() (Config, error) {

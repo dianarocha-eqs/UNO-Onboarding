@@ -70,6 +70,14 @@ func NewUserHandler(authService auth_service.AuthService, userService users_serv
 	}
 }
 
+// AddUser godoc
+// @Summary Create a new user
+// @Description Create a user (admin only)
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param user body domain.User true "User Data"
+// @Router /v1/users/create [post]
 func (h *UserHandlerImpl) AddUser(c *gin.Context) {
 
 	// Gets token from header
@@ -107,6 +115,14 @@ func (h *UserHandlerImpl) AddUser(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"uuid": ID})
 }
 
+// EditUser godoc
+// @Summary Edit a user
+// @Description Edit a user's information (admin or user themselves)
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param user body domain.User true "User Data"
+// @Router /v1/users/edit [post]
 func (h *UserHandlerImpl) EditUser(c *gin.Context) {
 
 	// Gets token from header
@@ -150,6 +166,15 @@ func (h *UserHandlerImpl) EditUser(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
+// ListUsers godoc
+// @Summary List users
+// @Description List all users with optional filtering and sorting
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param filter body handler.FilterSearchAndSort true "Filter and Sort Parameters"
+// @Success 200 {array} handler.UserResponse "List of users"
+// @Router /v1/users/list [post]
 func (h *UserHandlerImpl) ListUsers(c *gin.Context) {
 
 	var filter FilterSearchAndSort
