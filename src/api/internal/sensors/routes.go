@@ -2,13 +2,11 @@ package routes
 
 import (
 	auth_repository "api/internal/auth/repository"
-	auth_service "api/internal/auth/usecase"
 	"api/internal/sensors/handler"
 	sensor_repository "api/internal/sensors/repository"
 	sensor_service "api/internal/sensors/usecase"
 	users_repository "api/internal/users/repository"
 	users_service "api/internal/users/usecase"
-	"api/utils"
 	"log"
 
 	"github.com/gin-gonic/gin"
@@ -34,14 +32,16 @@ func RegisterSensorRoutes(router *gin.Engine) {
 
 	userService := users_service.NewUserService(usersRepos, authRepo)
 	sensorService := sensor_service.NewSensorService(sensorRepo)
-	authService := auth_service.NewAuthService(authRepo, usersRepos)
+	// authService := auth_service.NewAuthService(authRepo, usersRepos)
 
 	h := handler.NewSensorHandler(sensorService, userService)
 
 	// Sensor routes
-	api := router.Group("/v1/sensor")
-	api.Use(utils.AuthMiddleware(authService))
+	api := router.Group("/v1/sensor/")
+	// api.Use(utils.AuthMiddleware(authService))
 	{
+		// Mark/uncheck sensors as favorites
+		api.POST("favorite", h.MarkSensorAsFavorite)
 		// List sensors
 		api.POST("list", h.ListSensors)
 		// Update sensor
