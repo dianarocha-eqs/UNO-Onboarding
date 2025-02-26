@@ -28,7 +28,7 @@ func NewSensorDataService(repo repository.SensorDataRepository) SensorDataServic
 func (s *SensorDataServiceImpl) GetSensorData(ctx context.Context, sensorUuid uuid.UUID, from, to time.Time) ([]domain.SensorData, error) {
 	var sensorData, err = s.Repo.GetSensorData(ctx, sensorUuid, from, to)
 	if err != nil {
-		return sensorData, fmt.Errorf("failed to create sensor data")
+		return sensorData, fmt.Errorf("failed to read sensor data")
 	}
 	return sensorData, nil
 }
