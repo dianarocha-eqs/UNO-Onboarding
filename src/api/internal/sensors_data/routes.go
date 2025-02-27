@@ -45,5 +45,7 @@ func RegisterSensordataRoutes(router *gin.Engine) {
 	{
 		// Add sensor's data
 		api.POST("add", h.AddSensorData)
+		// Read sensor data
+		api.POST("get", h.ReadSensorData)
 	}
 }
