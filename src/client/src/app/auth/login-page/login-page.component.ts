@@ -19,6 +19,8 @@ export class LoginPageComponent {
 
   /** Holds the login form */
   loginForm: FormGroup;
+  /** Boolean to toggle password visibility */
+  showPassword: boolean = false;
 
   /**
    * Constructs the LoginPageComponent.
@@ -33,6 +35,14 @@ export class LoginPageComponent {
       password: ['', [Validators.required, Validators.minLength(12)]]
     });
   }
+  
+
+    /**
+   * Toggles the visibility of the password.
+   */
+    togglePasswordVisibility(): void {
+      this.showPassword = !this.showPassword;
+    }
 
 
   /**

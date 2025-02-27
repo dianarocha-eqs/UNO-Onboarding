@@ -133,6 +133,44 @@ button:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);  /* Shadow effect around the button */
 }
 
+/* Specific Styles for Submit (Enter) Button */
+.submit-btn {
+  background-color: #1C30CC;
+  color: white;
+  width: 100%;
+}
+
+/* Hover Effect for Submit Button */
+.submit-btn:hover {
+  background-color: #003a8c;  /* Darken the button color when hovered */
+}
+
+/* Password wrapper to align password input and show/hide text */
+.password-wrapper {
+  display: flex;
+  align-items: center;
+  position: relative;  /* Make sure the text is correctly aligned within the box */
+}
+
+.password-wrapper input {
+  width: 100%;  /* The input field will take up the entire width */
+  padding-right: 60px;  /* Make space for the "Show/Hide" text */
+}
+
+.show-password {
+  position: absolute;
+  right: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #007BFF;  /* Set the color to blue */
+  text-decoration: underline;
+}
+
+.show-password:hover {
+  color: #0056b3;  /* Darker blue when hovered */
+}
+
+
 .error-message {
   color: red;
   margin-bottom: 10px;
