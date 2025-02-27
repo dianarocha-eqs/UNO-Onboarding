@@ -13,11 +13,11 @@ type User struct {
 	// User's email (unique and required)
 	Email string `json:"email"`
 	// User's hashed password
-	Password string `json:"password"`
+	Password string `json:"password" swaggerignore:"true"`
 	// Profile picture (optional)
 	Picture string `json:"picture"`
 	// User's phone number (required)
 	Phone string `json:"phone"`
 	// User's role: admin (true), user (false)
-	Role bool `json:"role"`
+	Role bool `json:"role" `
 }
