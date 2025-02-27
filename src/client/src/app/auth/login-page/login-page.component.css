@@ -83,6 +83,17 @@ h2 {
   text-align: left;
 }
 
+input.error {
+  border: 2px solid #E34C4C;
+}
+
+.error {
+  color: #E34C4C;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+
 label {
   color: #152935;
   display: block;
