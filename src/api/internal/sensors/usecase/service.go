@@ -5,6 +5,7 @@ import (
 	"api/internal/sensors/repository"
 	"context"
 	"errors"
+	"fmt"
 
 	uuid "github.com/tentone/mssql-uuid"
 )
@@ -17,6 +18,8 @@ type SensorService interface {
 	EditSensor(ctx context.Context, sensor *domain.Sensor, userUuid uuid.UUID) error
 	// List all sensors
 	ListSensors(ctx context.Context, userUuid uuid.UUID, search string) ([]domain.Sensor, error)
+	// Mark/uncheck sensors as favorites
+	MarkSensorFavorite(ctx context.Context, userUuid uuid.UUID, sensorUuid uuid.UUID, favorite bool) error
 }
 
 // Handles sensor's logic and interaction with the repository
@@ -108,4 +111,13 @@ func (s *SensorServiceImpl) ListSensors(ctx context.Context, userUuid uuid.UUID,
 	}
 
 	return sensors, nil
+}
+
+func (s *SensorServiceImpl) MarkSensorFavorite(ctx context.Context, userUuid uuid.UUID, sensorUuid uuid.UUID, favorite bool) error {
+	var err = s.Repo.MarkSensorFavorite(ctx, userUuid, sensorUuid, favorite)
+	if err != nil {
+		fmt.Print(err)
+		return fmt.Errorf("failed to update sensor favorite status")
+	}
+	return err
 }

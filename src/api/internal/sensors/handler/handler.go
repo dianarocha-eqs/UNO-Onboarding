@@ -7,8 +7,10 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	uuid "github.com/tentone/mssql-uuid"
 )
 
+// Performs user's data operations using database/sql to interact with the database
 // Interface for handling HTTP requests related to sensors
 type SensorHandler interface {
 	// GetSensors handles the retrieval of all sensors.
@@ -17,12 +19,22 @@ type SensorHandler interface {
 	CreateSensor(c *gin.Context)
 	// Handles the HTTP request to edit sensor
 	EditSensor(c *gin.Context)
+	// Handles the HTTP request to mark/uncheck sensors as favorite
+	MarkSensorAsFavorite(c *gin.Context)
 }
 
 // Structure request for list sensors
 type FilterSearch struct {
 	// Search term to filter sensors by name
 	Search string `json:"search"`
+}
+
+// Structure request for sensor's marked as favorites
+type RequestFavoriteSensors struct {
+	// Sensor UUID
+	SensorUuid uuid.UUID `json:"uuid"`
+	// Whether the sensor is marked as favorite or not
+	Favorite bool `json:"favorite"`
 }
 
 // Process HTTP requests and interaction with SensorService/UserService for sensor operations
@@ -132,4 +144,36 @@ func (h *SensorHandlerImpl) ListSensors(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, response)
+}
+
+func (h *SensorHandlerImpl) MarkSensorAsFavorite(c *gin.Context) {
+
+	// Gets token from header
+	var tokenAuth, _ = c.Get("token")
+
+	var str = tokenAuth.(string)
+
+	// Get user id from token (set by login)
+	var userUuid, err = h.UserService.GetUserByToken(c.Request.Context(), str)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user"})
+		return
+	}
+
+	var req RequestFavoriteSensors
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err = h.SensorService.MarkSensorFavorite(c.Request.Context(), userUuid, req.SensorUuid, req.Favorite)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"sensorUuid": req.SensorUuid,
+		"favorite":   req.Favorite,
+	})
 }

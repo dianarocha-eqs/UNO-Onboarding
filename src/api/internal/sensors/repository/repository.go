@@ -21,9 +21,10 @@ type SensorRepository interface {
 	GetSensorOwner(ctx context.Context, sensorUuid uuid.UUID, userID uuid.UUID) (bool, error)
 	// Retrieves all sensors from the database.
 	ListSensors(ctx context.Context, userID uuid.UUID, search string) ([]domain.Sensor, error)
+	// Mark/uncheck sensors as favorites
+	MarkSensorFavorite(ctx context.Context, userUuid uuid.UUID, sensorUuid uuid.UUID, favorite bool) error
 }
 
-// Performs user's data operations using database/sql to interact with the database
 type SensorRepositoryImpl struct {
 	DB *sql.DB
 }
@@ -131,4 +132,34 @@ func (r *SensorRepositoryImpl) ListSensors(ctx context.Context, userID uuid.UUID
 	}
 
 	return sensors, nil
+}
+
+func (r *SensorRepositoryImpl) MarkSensorFavorite(ctx context.Context, userUuid uuid.UUID, sensorUuid uuid.UUID, favorite bool) error {
+	var query string
+
+	if favorite {
+		// Insert if the sensor is not already marked as a favorite for this user
+		query = `
+		IF NOT EXISTS (SELECT 1 FROM user_favorite_sensors WHERE userUuid = @userUuid AND sensorUuid = @sensorUuid)
+		BEGIN
+			INSERT INTO user_favorite_sensors (userUuid, sensorUuid)
+			VALUES (@userUuid, @sensorUuid);
+		END`
+	} else {
+		// Remove from the favorites if the user wants to unmark it
+		query = `
+		DELETE FROM user_favorite_sensors
+		WHERE userUuid = @userUuid AND sensorUuid = @sensorUuid;
+		`
+	}
+
+	_, err := r.DB.ExecContext(ctx, query,
+		sql.Named("userUuid", userUuid),
+		sql.Named("sensorUuid", sensorUuid),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to update favorite status: %w", err)
+	}
+
+	return nil
 }

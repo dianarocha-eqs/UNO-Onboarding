@@ -16,6 +16,8 @@ import (
 type SensorDataRepository interface {
 	// Retrieves sensor data within a specific time interval.
 	GetSensorData(ctx context.Context, sensorUuid uuid.UUID, from, to time.Time) ([]domain.SensorData, error)
+	// Add sensor data
+	AddSensorData(ctx context.Context, sensorData []*domain.SensorData) error
 }
 
 // Performs sensors's data operations using database/sql to interact with the database
@@ -30,6 +32,48 @@ func NewSensorDataRepository() (SensorDataRepository, error) {
 	}
 
 	return &SensorDataRepositoryImpl{DB: db}, nil
+}
+
+func (r *SensorDataRepositoryImpl) AddSensorData(ctx context.Context, sensorData []*domain.SensorData) error {
+
+	// Start a transaction
+	tx, err := r.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %v", err)
+	}
+
+	query := `
+		INSERT INTO SensorData (sensorUuid, timestamp, value)
+		VALUES (@sensorUuid, @timestamp, @value)
+	`
+
+	stmt, err := tx.PrepareContext(ctx, query)
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to prepare statement: %v", err)
+	}
+	defer stmt.Close()
+
+	for _, sensorData := range sensorData {
+		_, err := stmt.ExecContext(ctx,
+			sql.Named("sensorUuid", sensorData.SensorUuid),
+			sql.Named("timestamp", sensorData.Timestamp),
+			sql.Named("value", sensorData.Value),
+		)
+		if err != nil {
+			tx.Rollback()
+			return fmt.Errorf("failed to insert sensor data: %v", err)
+		}
+	}
+
+	// Commit transaction
+	err = tx.Commit()
+	if err != nil {
+		return fmt.Errorf("failed to commit transaction: %v", err)
+	}
+
+	return nil
+
 }
 
 func (s *SensorDataRepositoryImpl) GetSensorData(ctx context.Context, sensorUuid uuid.UUID, from, to time.Time) ([]domain.SensorData, error) {

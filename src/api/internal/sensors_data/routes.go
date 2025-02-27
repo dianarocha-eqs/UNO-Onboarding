@@ -9,6 +9,7 @@ import (
 	user_repository "api/internal/users/repository"
 	user_service "api/internal/users/usecase"
 	middleware "api/utils"
+
 	"log"
 
 	"github.com/gin-gonic/gin"
@@ -42,6 +43,8 @@ func RegisterSensordataRoutes(router *gin.Engine) {
 	api := router.Group("/v1/sensor/data/")
 	api.Use(middleware.AuthMiddleware(authService))
 	{
+		// Add sensor's data
+		api.POST("add", h.AddSensorData)
 		// Read sensor data
 		api.POST("get", h.ReadSensorData)
 	}
