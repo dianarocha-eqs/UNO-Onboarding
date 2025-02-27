@@ -7,7 +7,7 @@ import { importProvidersFrom } from '@angular/core';
 
 bootstrapApplication(AppComponent, {
   providers: [
-    // provideHttpClient(),
+    provideHttpClient(),
     provideRouter(
       routes,
       withPreloading( NoPreloading), // No Preloading Strategy for now
