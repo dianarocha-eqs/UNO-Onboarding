@@ -1,4 +1,4 @@
-package routes
+package users
 
 import (
 	auth_repository "api/internal/auth/repository"
@@ -14,7 +14,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Declares the routes that can be accessed for users management.
+// @Description All routes for user
 func RegisterUsersRoutes(router *gin.Engine) {
 
 	authRepo, err := auth_repository.NewAuthRepository()
@@ -36,19 +36,19 @@ func RegisterUsersRoutes(router *gin.Engine) {
 	api := router.Group("/v1/users/")
 	api.Use(utils.AuthMiddleware(authService))
 	{
-		// Create User (if admin)
+		// @Router /v1/users/create [post]
 		api.POST("create", utils.AdminOnly(), h.AddUser)
-		// Edit User (if admin or user themself)
+		// @Router /v1/users/edit [post]
 		api.POST("edit", utils.AdminAndUserItself(), h.EditUser)
-		// List Users
+		// @Router /v1/users/list [post]
 		api.POST("list", h.ListUsers)
 	}
 
 	recover := router.Group("/v1/users/")
 	// No authentication required
-	// Recovery password
+	// @Router /v1/users/forgot-password [post]
 	recover.POST("forgot-password", h.RecoverPassword)
-	// Reset Password
+	// @Router /v1/users/change-password [post]
 	recover.POST("change-password", h.ResetPassword)
 
 }

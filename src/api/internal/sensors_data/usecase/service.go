@@ -5,10 +5,15 @@ import (
 	"api/internal/sensors_data/repository"
 	"context"
 	"fmt"
+	"time"
+
+	uuid "github.com/tentone/mssql-uuid"
 )
 
 // Interface for sensor's data services
 type SensorDataService interface {
+	// Retrieves sensor data within a specific time interval.
+	GetSensorData(ctx context.Context, sensorUuid uuid.UUID, from, to time.Time) ([]domain.SensorData, error)
 	// Add sensor data
 	AddSensorData(ctx context.Context, sensorData []*domain.SensorData) error
 }
@@ -28,4 +33,12 @@ func (s *SensorDataServiceImpl) AddSensorData(ctx context.Context, sensorData []
 		return fmt.Errorf("failed to add sensor data")
 	}
 	return nil
+}
+
+func (s *SensorDataServiceImpl) GetSensorData(ctx context.Context, sensorUuid uuid.UUID, from, to time.Time) ([]domain.SensorData, error) {
+	var sensorData, err = s.Repo.GetSensorData(ctx, sensorUuid, from, to)
+	if err != nil {
+		return sensorData, fmt.Errorf("failed to read sensor data")
+	}
+	return sensorData, nil
 }

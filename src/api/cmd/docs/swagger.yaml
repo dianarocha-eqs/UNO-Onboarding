@@ -1,0 +1,8 @@
+host: localhost:8080
+info:
+  contact: {}
+  description: Declares all routes from the api
+  title: Uno-Onboarding api in go
+  version: 1.0.0
+paths: {}
+swagger: "2.0"

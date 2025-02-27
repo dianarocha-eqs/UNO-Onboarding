@@ -13,19 +13,32 @@ import (
 
 // Interface for handling HTTP requests related to sensor's data
 type SensorDataHandler interface {
+	// Handles the HTTP request to add sensor data
 	AddSensorData(c *gin.Context)
+	// Handles the HTTP request to read sensor data
+	ReadSensorData(c *gin.Context)
 }
 
-// Structure request for sensor data
+// Structure request to add sensor data
 type SensorDataRequest struct {
 	// Uuid of the sensor that recorded the data
 	SensorUuid uuid.UUID `json:"sensorUuid"`
 	// Array of timestamp-value pairs
 	Readings []struct {
 		// ISO 8601 format
-		Timestamp string  `json:"timestamp"`
-		Value     float64 `json:"value"`
+		Timestamp time.Time `json:"timestamp"`
+		Value     float64   `json:"value"`
 	} `json:"readings"`
+}
+
+// Structure request to read sensor data
+type SensorDataGetRequest struct {
+	// Uuid for the sensor whose data is to be retrieved
+	SensorUuid uuid.UUID `json:"sensorUuid"`
+	// Start date of the time range
+	From time.Time `json:"from"`
+	// End date of the time range
+	To time.Time `json:"to"`
 }
 
 // Process HTTP requests and interaction with the SensorDataService
@@ -54,25 +67,18 @@ func (h *SensorDataHandlerImpl) AddSensorData(c *gin.Context) {
 	var responseData [][]float64
 
 	for _, reading := range req.Readings {
-		// Convert timestamp string to time.Time
-		timestamp, err := time.Parse(time.RFC3339, reading.Timestamp)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Invalid timestamp format: %s", reading.Timestamp)})
-			return
-		}
-
 		sensorData := &domain.SensorData{
 			SensorUuid: req.SensorUuid,
-			Timestamp:  timestamp,
-			Value:      req.Readings[1].Value,
+			Timestamp:  reading.Timestamp,
+			Value:      reading.Value,
 		}
 
 		sensorDataList = append(sensorDataList, sensorData)
-		responseData = append(responseData, []float64{float64(timestamp.Unix()), reading.Value})
+		responseData = append(responseData, []float64{float64(reading.Timestamp.Unix()), reading.Value})
 	}
 
-	var err = h.Service.AddSensorData(c.Request.Context(), sensorDataList)
-	if err != nil {
+	if err := h.Service.AddSensorData(c.Request.Context(), sensorDataList); err != nil {
+		fmt.Print(err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -81,4 +87,34 @@ func (h *SensorDataHandlerImpl) AddSensorData(c *gin.Context) {
 		"uuid": req.SensorUuid,
 		"data": responseData,
 	})
+}
+
+func (h *SensorDataHandlerImpl) ReadSensorData(c *gin.Context) {
+	var req SensorDataGetRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if req.From.After(req.To) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "'from' timestamp must be before 'to' timestamp"})
+		return
+	}
+
+	sensorData, err := h.Service.GetSensorData(c.Request.Context(), req.SensorUuid, req.From, req.To)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	var responseData [][]float64
+	for _, data := range sensorData {
+		responseData = append(responseData, []float64{
+			float64(data.Timestamp.Unix()),
+			data.Value,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": responseData})
 }

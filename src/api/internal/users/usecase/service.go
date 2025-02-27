@@ -163,7 +163,18 @@ func (s *UserServiceImpl) GetUserByEmail(ctx context.Context, email string) (*do
 }
 
 func (s *UserServiceImpl) AuthenticateUser(ctx context.Context, email, password string) error {
-	var err = s.UserRepository.AuthenticateUser(ctx, email, password)
+
+	var err error
+	// Validate email
+	if err = aux.ValidateEmail(email); err != nil {
+		return err
+	}
+	// Validate phone number
+	if err = aux.ValidatePhone(password); err != nil {
+		return err
+	}
+
+	err = s.UserRepository.AuthenticateUser(ctx, email, password)
 	if err != nil {
 		return fmt.Errorf("invalid email or password: %v", err)
 	}
