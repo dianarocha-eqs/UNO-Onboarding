@@ -14,6 +14,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// @Description All routes for user
 func RegisterUsersRoutes(router *gin.Engine) {
 
 	authRepo, err := auth_repository.NewAuthRepository()

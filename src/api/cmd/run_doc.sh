@@ -1,7 +1,6 @@
 #!/bin/bash
  
 echo " - Navigate to root"
-cd ..
  
 if ! command -v swag &> /dev/null; then
     echo " - Install swag"
