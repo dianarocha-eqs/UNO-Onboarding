@@ -1,0 +1,51 @@
+<!-- Sidebar Navigation -->
+<div class="sidebar" [class.open]="!sidebarService.isOpen">
+  <!-- User Info -->
+  <div class="uno-info">
+    <img src="/assets/uno-symbol.svg" alt="Uno Symbol" />
+  </div>
+
+  <!-- Menu Items -->
+  <ul class="menu">
+    <li class="menu-item" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+      <a routerLink="/home" (click)="closeSidebar()">
+        <img src="/assets/Home.svg" alt="Home" />
+        <span>Home</span>
+      </a>
+    </li>
+    <li class="menu-item" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+      <a routerLink="/dashboard" (click)="closeSidebar()">
+        <img src="/assets/Stat.svg" alt="Dashboard" />
+        <span>Dashboard</span>
+      </a>
+    </li>
+    <li class="menu-item" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+      <a routerLink="/sensors" (click)="closeSidebar()">
+        <img src="/assets/Line_fill.svg" alt="Sensors" />
+        <span>Sensors</span>
+      </a>
+    </li>
+    <li class="menu-item" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+      <a routerLink="/users" (click)="closeSidebar()">
+        <img src="/assets/User.svg" alt="Users" />
+        <span>Users</span>
+      </a>
+    </li>
+  </ul>
+
+  <!-- Logout Option -->
+  <div class="logout">
+    <li class="logout-setting" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+      <a routerLink="/settings" (click)="closeSidebar()">
+        <img src="/assets/Setting_line.svg" alt="Settings" />
+        <span>Settings</span>
+      </a>
+    </li>
+    <li class="logout-setting" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+      <a routerLink="/logout" (click)="closeSidebar()">
+        <img src="/assets/Sign_out_circle.svg" alt="Logout" />
+        <span>Logout</span>
+      </a>
+    </li>
+  </div>
+</div>

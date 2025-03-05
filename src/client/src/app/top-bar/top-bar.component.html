@@ -1,0 +1,46 @@
+<div class="top-bar">
+    <!-- If on Home page, show user info -->
+    <div *ngIf="currentRoute === '/home'" class="user-info">
+      <img src="/assets/user-profile.svg" alt="User Profile" class="user-img" />
+      <label>Olá, <span>Ricardo</span></label>
+    </div>
+    
+    <div *ngIf="currentRoute !== '/home'" class="page-info">
+        <div class = "route-direction-left">
+            <div class="home-page">
+                <a class="route" routerLink="/home">Home </a> / 
+                <div class="route-page">
+                    <span>{{ pageTitle }}</span>
+                </div>
+            </div>
+            <div class="breadcrumb">
+                <div *ngIf="currentRoute !== '/home'" class="breadcrumb">
+                    <span class="back-arrow" (click)="goBack()">←</span>
+                    <span class="current-page">{{ pageTitle }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="user-right" >
+            <label>Ricardo Almeida</label>
+            <img src="/assets/user-profile.svg" alt="User Profile" class="user-img" />
+        </div>
+    </div>
+
+
+    
+    <!-- <button class="hamburger" (click)="toggleSidebar()">
+        <img src="/assets/Menu.svg"/>
+    </button>
+
+    Mobile Dropdown Menu
+    <div class="mobile-menu" *ngIf="mobileMenuOpen">
+        <a routerLink="/dashboard" (click)="toggleMobileMenu()">Dashboard</a>
+        <a routerLink="/sensors" (click)="toggleMobileMenu()">Sensors</a>
+        <a routerLink="/users" (click)="toggleMobileMenu()">Users</a>
+        <a routerLink="/settings" (click)="toggleMobileMenu()">Settings</a>
+        <a routerLink="/logout" (click)="toggleMobileMenu()">Logout</a>
+    </div> -->
+
+</div>
+  

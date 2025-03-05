@@ -3,7 +3,7 @@ export const routes: Routes = [
   {
     path: '',
     pathMatch: 'full',
-    redirectTo: 'home', // Default route to authentication
+    redirectTo: 'auth', // Default route to authentication
   },
   {
     path: 'auth',
@@ -25,6 +25,16 @@ export const routes: Routes = [
     loadChildren: () =>
       import('./sensors-list/sensors-list.routes').then((m) => m.SENSORS_ROUTES),
   },
+  // {
+  //   path: 'users',
+  //   loadChildren: () =>
+  //     import('./users/users.routes').then((m) => m.USERS_ROUTES),
+  // },
+  // {
+  //   path: 'settings',
+  //   loadChildren: () =>
+  //     import('./settings/settings.routes').then((m) => m.SETTINGS_ROUTES),
+  // },
   {
     path: '**',
     redirectTo: 'home',
