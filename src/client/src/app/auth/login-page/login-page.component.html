@@ -1,1 +1,55 @@
-<p>login-page works!</p>
+<div class="login-container">
+  <div class="left-side">
+    <img src="/assets/login-photo.jpeg" alt="Login Photo" class="login-photo" />
+  </div>
+  
+  <div class="right-side">
+    <div class="content-wrapper">
+      <div class="symbol">
+        <img src="/assets/uno-symbol.png" alt="Symbol" />
+      </div>
+      <h2>Welcome!</h2>
+      <p class="subtitle">Enter your credentials to access your account.</p>
+      <form [formGroup]="loginForm" (ngSubmit)="login()">
+        <div class="form-group">
+          <label for="email">Email:</label>
+          <input
+            id="email"
+            type="email"
+            formControlName="email"
+            placeholder="username@email.com"
+            [ngClass]="{ 'error': loginForm.get('email')?.invalid && loginForm.get('email')?.touched }"
+          />
+          <div *ngIf="emailError" class="error">{{ emailError }}</div>
+        </div>
+        
+        <div class="form-group">
+          <label for="password">Password:</label>
+          <div class="password-wrapper">
+            <input 
+              id="password" 
+              type="{{ showPassword ? 'text' : 'password' }}" 
+              formControlName="password" 
+              placeholder="Insert your password" 
+              [ngClass]="{ 'error': loginForm.get('password')?.invalid && loginForm.get('password')?.touched }"
+            />
+            <span 
+              class="show-password" 
+              (click)="togglePasswordVisibility()"
+            >
+              {{ showPassword ? 'Hide' : 'Show' }}
+          </span>
+          </div>
+          <div *ngIf="passwordError" class="error">{{ passwordError }}</div>
+        </div>
+      
+        
+        <span class="forgot-password">Forgot my password</span>
+
+        <button type="submit" class="add-button" [disabled]="loginForm.invalid">
+          Enter
+        </button>
+        </form>
+    </div>
+  </div>
+</div>
