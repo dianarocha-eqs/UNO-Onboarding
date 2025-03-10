@@ -31,7 +31,14 @@ import (
 func main() {
 
 	router := gin.Default()
-	router.Use(cors.Default())
+	// Middleware that allows CORS and custom headers (e.g., Authorization)
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"*"}, // your frontend URL
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Authorization", "Content-Type", "Role"},
+		AllowCredentials: true,
+		ExposeHeaders:    []string{"Authorization"},
+	}))
 
 	// All routes
 	routes_sensors.RegisterSensorRoutes(router)
