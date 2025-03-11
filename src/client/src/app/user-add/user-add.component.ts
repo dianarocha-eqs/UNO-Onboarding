@@ -129,7 +129,7 @@ export class UserAddComponent {
 
     this.userService.addUser(user, token).subscribe({
       next: (response) => {
-         // Reset form and clear error/success messages
+        console.log('User created successfully!', response);
         this.userForm.reset();
         Object.keys(this.userForm.controls).forEach((key) => {
           this.userForm.controls[key].setErrors(null);  

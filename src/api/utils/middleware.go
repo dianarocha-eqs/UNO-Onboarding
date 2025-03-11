@@ -104,6 +104,7 @@ func AuthMiddleware(authService auth_service.AuthService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Get the token from Authorization header
 		var authHeader = c.GetHeader("Authorization")
+
 		if authHeader == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "authorization token required"})
 			c.Abort()
