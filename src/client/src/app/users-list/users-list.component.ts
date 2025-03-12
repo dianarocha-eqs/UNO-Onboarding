@@ -13,6 +13,7 @@ import { MatListModule} from '@angular/material/list';
 
 @Component({
   selector: 'app-users-list',
+  standalone: true,
   imports: [RouterModule, NgIf, ReactiveFormsModule, NgFor, MatFormFieldModule,MatInputModule,MatSelectModule,MatOptionModule,MatButtonModule, MatInputModule, MatListModule],
   templateUrl: './users-list.component.html',
   styleUrl: './users-list.component.css'
