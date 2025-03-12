@@ -1,4 +1,5 @@
 .user-list-container {
+    font-family: 'Open Sans', sans-serif;
     margin: 30px auto;
     padding: 30px;
     margin: auto;
@@ -13,17 +14,12 @@
     display: flex;
     justify-content: space-between;
     margin-bottom: 10px;
-    color: darkgray
 }
 
 .search-bar {
-    width: 70%;  /* Make the search bar shorter */
-    color: darkgray;
+    width: 70%;
 }
 
-.search-text {
-    color: darkgray;
-}
 
 .sort-toggle {
     display: flex;
@@ -62,38 +58,26 @@ mat-list-item {
     display: flex;
     align-items: center;
     justify-content: flex-start;
-    font-weight: bold;
     border-bottom: 1px solid #ccc;
     text-align: center;
-}
-
-/* Ensuring the header aligns with list items */
-.header-photo {
-    width: 60px;
-    height: 60px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 14px;
+    color: #152935;
 }
 
 .header-name {
     font-size: 16px;
-    font-weight: bold;
     margin-left: 40px;
     margin-right: auto;
 }
 
 .header-uuid {
     font-size: 16px;
-    font-weight: bold;
 }
 
 
 mat-list-item {
     display: flex;
     align-items: center;
-   
+
 }
 
 .user-info {
@@ -143,4 +127,3 @@ mat-list-item {
     padding-top: 30px;
     padding-bottom: 30px;
 }
-
