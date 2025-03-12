@@ -1,0 +1,84 @@
+.container {
+    width: 100%;
+    max-width: 350px;
+    margin: 50px auto 0 auto;
+    padding: 15px; 
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
+  }
+  
+  .input-field {
+    width: 100%;
+    padding-inline: 30px;
+    margin-bottom: 8px; 
+  }
+  
+  mat-form-field {
+    width: 100%;
+    margin-bottom: 5px;
+  }
+  
+  .photo-field {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 15px; 
+  }
+  
+  .photo-circle {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    border: 2px solid #ddd;
+    background-color: #e0e0e0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    cursor: pointer;
+    overflow: hidden;
+  }
+  
+  .photo-selected {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; 
+  }
+  
+  .camera-icon {
+    width: 40px; 
+    height: 40px;
+    opacity: 0.4; 
+  }
+  
+  
+  .choose-image {
+    font-size: 13px; 
+    color: #007bff;
+    cursor: pointer;
+    margin-top: 5px;
+  }
+  
+  .error {
+    color: red;
+    font-size: 12px;
+    text-align: left;
+    display: block;
+  }
+  
+  
+  .form-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px; 
+    margin-top: 15px;
+  }
+  
+  button {
+    width: 100%;
+    padding: 8px; 
+    font-size: 15px;
+  }
+  

@@ -22,6 +22,7 @@ export class UserService {
     let headers = new HttpHeaders();
     headers = headers.set('Authorization', token);
     headers = headers.set('Role', user.role.toString());
+    // Ensure you're passing the correct data
     return this.http.post<{ uuid: string }>(`${this.apiUrl}/create`, user, { headers });
   }
 

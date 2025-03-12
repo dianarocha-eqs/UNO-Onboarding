@@ -33,7 +33,7 @@ func main() {
 	router := gin.Default()
 	// Middleware that allows CORS and custom headers (e.g., Authorization)
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"*"}, // your frontend URL
+		AllowOrigins:     []string{"*"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Authorization", "Content-Type", "Role"},
 		AllowCredentials: true,
