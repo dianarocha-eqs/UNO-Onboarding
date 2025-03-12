@@ -20,6 +20,7 @@ import { MatButtonModule } from '@angular/material/button';
 export class UserAddComponent {
   userForm: FormGroup;
   selectedImage: string | ArrayBuffer | null = null;
+  errorMessage: string | null = null;
 
   constructor(
     private fb: FormBuilder,
@@ -118,29 +119,29 @@ export class UserAddComponent {
     user.role = role === '1';
 
     if (!token) {
-      console.error("Authorization token is missing from localStorage.");
+      this.errorMessage = "Authorization token is missing from localStorage.";
       return; 
     }
 
     if (!role) {
-      console.error("Role is missing from localStorage.");
+      this.errorMessage = "Role is missing from localStorage.";
       return; 
     }
 
     this.userService.addUser(user, token).subscribe({
       next: (response) => {
+        this.errorMessage = null;
         console.log('User created successfully!', response);
         this.userForm.reset();
         Object.keys(this.userForm.controls).forEach((key) => {
-          this.userForm.controls[key].setErrors(null);  
-          this.userForm.controls[key].markAsPristine();
+          this.userForm.controls[key].setErrors(null); 
           this.userForm.controls[key].markAsUntouched();
         });
   
         this.selectedImage = null;
       },
       error: (err) => {
-        console.error("Request failed:", err);
+        this.errorMessage = err.error?.error || 'Request failed';
       },
     });
   }

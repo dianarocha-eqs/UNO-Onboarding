@@ -41,7 +41,7 @@ func RegisterUsersRoutes(router *gin.Engine) {
 		// @Router /v1/users/edit [post]
 		api.POST("edit", utils.AdminAndUserItself(), h.EditUser)
 		// @Router /v1/users/list [post]
-		api.POST("list", h.ListUsers)
+		api.POST("list", utils.AdminOnly(), h.ListUsers)
 	}
 
 	recover := router.Group("/v1/users/")

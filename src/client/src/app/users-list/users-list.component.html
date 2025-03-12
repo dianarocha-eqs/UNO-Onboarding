@@ -1,0 +1,43 @@
+<div class="user-list-container">
+    <h2>User Listing</h2>
+  
+    <!-- Search Bar and Sort Controls in a Row -->
+    <div class="search-sort-container">
+      <!-- Search Bar -->
+      <mat-form-field appearance="outline" class="search-bar">
+        <mat-label>Search by name or email</mat-label>
+        <input matInput [formControl]="searchControl" (input)="onSearch()" />
+      </mat-form-field>
+  
+      <!-- Sort Button Toggle (ascending/descending) -->
+      <div class="sort-toggle">
+        <p class="sort-label">Sort order</p>
+        <button mat-icon-button (click)="onSortChange(1)" [class.active]="sortOrder === 1">
+          <i class="material-icons">arrow_upward</i>
+        </button>
+        <button mat-icon-button (click)="onSortChange(-1)" [class.active]="sortOrder === -1">
+          <i class="material-icons">arrow_downward</i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Error Message -->
+    <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
+  
+    <!-- User List -->
+    <mat-list *ngIf="users.length > 0">
+        <mat-list-item *ngFor="let user of users" class="user-list-item">
+            <!-- Container for both photo and name -->
+            <div class="user-info">
+                <!-- Circle with photo or random icon -->
+                <div class="user-photo-container">
+                    <img [src]="user.picture" class="user-photo" />
+                </div>
+                <!-- User Name -->
+                <span class="user-name">{{ user.name }}</span>
+            </div>
+        </mat-list-item>
+    </mat-list>
+  
+    <p *ngIf="users.length === 0 && !errorMessage">No users found.</p>
+</div>
