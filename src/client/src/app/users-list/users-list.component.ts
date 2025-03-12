@@ -40,8 +40,8 @@ export class UserListingComponent implements OnInit {
   fetchUsers(): void {
 
     const user = this.userForm.value;
-    let token = localStorage.getItem('Authorization'); 
-    let role = localStorage.getItem('Role'); 
+    const token = localStorage.getItem('Authorization'); 
+    const role = localStorage.getItem('Role'); 
     
     user.role = role === '1';
 
