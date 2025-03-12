@@ -46,13 +46,18 @@ export class UserAddComponent {
    */
   get emailError(): string | null {
     const email = this.userForm.get('email');
+    const emailValue = email?.value || '';
+  
     if (email?.hasError('required') && email?.touched) {
       return 'Email is required';
     } else if (email?.hasError('email') && email?.touched) {
       return 'Invalid email format';
+    } else if (email?.touched && !/\.[a-zA-Z]{2,}$/.test(emailValue)) {
+      return 'Email must have a valid domain (e.g., .com, .pt)';
     }
     return null;
   }
+  
 
   /**
    * Retrieves the appropriate error message for the phone field.
@@ -129,7 +134,7 @@ export class UserAddComponent {
     }
 
     this.userService.addUser(user, token).subscribe({
-      next: () => {
+      next: (response) => {
         this.errorMessage = null;
         this.userForm.reset();
         Object.keys(this.userForm.controls).forEach((key) => {

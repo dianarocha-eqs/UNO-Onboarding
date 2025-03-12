@@ -8,7 +8,7 @@ import { User } from './interfaces/user';
   providedIn: 'root',
 })
 export class UserService {
-  private apiUrl = `${environment.apiUrl}/v1/users/create`; // Use environment variable
+  private apiUrl = `${environment.apiUrl}/v1/users`; // Use environment variable
 
   constructor(private http: HttpClient) {}
 
@@ -23,7 +23,7 @@ export class UserService {
     headers = headers.set('Authorization', token);
     headers = headers.set('Role', user.role.toString());
     // Ensure you're passing the correct data
-    return this.http.post<{ uuid: string }>(this.apiUrl, user, { headers });
+    return this.http.post<{ uuid: string }>(`${this.apiUrl}/create`, user, { headers });
   }
   
 }

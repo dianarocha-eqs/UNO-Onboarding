@@ -1,15 +1,123 @@
-/* You can add global styles to this file, and also import other style files */
-/* styles.css */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-  }
-  
-  body {
-    margin: 0;
-    padding: 0;
-  }
-  
-html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+:root {
+    /* Brand */
+    --primary-color: #1C30CC; 
+    --primary-hover-color: #1825AA;
+
+    /* Status */
+    --error-color: #E34C4C; 
+    --error-hover-color: #BD3539;
+    --warning-color: #F7B422;
+    --warning-hover-color: #FFAB00;
+    --success-color: #56BD5B;
+    --success-hover-color: #3E9645;
+
+    /* Gray Scale */
+    --gray-0-color: #152935;
+    --gray-1-color: #929DB2;
+    --gray-2-color: #A8B3C3;
+    --gray-3-color: #E9ECF1;
+    --gray-4-color: #FFFFFF;
+
+    /* Text */
+    --text-color: var(--gray-0-color);
+    --body-font: 'Open Sans', sans-serif;
+}
+
+/* Font Styles */
+.body1 {
+    font-family: var(--body-font);
+    font-size: 14px;
+    line-height: 16px;
+    font-weight: 500;
+}
+
+.body2 {
+    font-family: var(--body-font);
+    font-size: 14px;
+    line-height: 16px;
+    font-weight: 400;
+}
+
+.headline1 {
+    font-family: var(--body-font);
+    font-size: 52px;
+    line-height: 56px;
+    font-weight: 400;
+}
+
+.headline2 {
+    font-family: var(--body-font);
+    font-size: 40px;
+    line-height: 46px;
+    font-weight: 700;
+}
+
+.headline4 {
+    font-family: var(--body-font);
+    font-size: 28px;
+    line-height: 32px;
+    font-weight: 400;
+}
+
+.headline5 {
+    font-family: var(--body-font);
+    font-size: 20px;
+    line-height: 24px;
+    font-weight: 700;
+}
+
+.headline6 {
+    font-family: var(--body-font);
+    font-size: 20px;
+    line-height: 24px;
+    font-weight: 400;
+}
+
+.subtitle1 {
+    font-family: var(--body-font);
+    font-size: 16px;
+    line-height: 20px;
+    font-weight: 700;
+}
+
+.subtitle2 {
+    font-family: var(--body-font);
+    font-size: 16px;
+    line-height: 20px;
+    font-weight: 500;
+}
+
+.button {
+    font-family: var(--body-font);
+    font-size: 14px;
+    line-height: 16px;
+    font-weight: 600;
+}
+
+.placeholder {
+    font-family: var(--body-font);
+    font-size: 14px;
+    line-height: 16px;
+    font-style: italic;
+}
+
+.caption1 {
+    font-family: var(--body-font);
+    font-size: 12px;
+    line-height: 14px;
+    font-weight: 400;
+}
+
+.caption2 {
+    font-family: var(--body-font);
+    font-size: 10px;
+    line-height: 12px;
+    font-weight: 700;
+}
+
+.link {
+    font-family: var(--body-font);
+    font-size: 10px;
+    line-height: 12px;
+    font-weight: 500;
+}
