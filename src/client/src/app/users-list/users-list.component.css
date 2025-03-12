@@ -36,7 +36,8 @@
 }
 
 .sort-toggle .active {
-    color: blue;
+    color: lightblue;
+    background-color: darkblue;
 }
 
 mat-list-item {
