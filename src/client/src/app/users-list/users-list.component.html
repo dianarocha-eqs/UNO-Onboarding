@@ -1,0 +1,51 @@
+<div class="user-list-container">
+    <h2>User Listing</h2>
+  
+    <!-- Search Bar and Sort Controls in a Row -->
+    <div class="search-sort-container">
+      <!-- Search Bar -->
+      <mat-form-field appearance="outline" class="search-bar">
+        <mat-label> Search by name or email</mat-label>
+        <input matInput [formControl]="searchControl" (input)="onSearch()" />
+      </mat-form-field>
+  
+      <!-- Sort Button Toggle (ascending/descending) -->
+      <div class="sort-toggle">
+        <p class="sort-label">Sort order</p>
+        <button mat-icon-button (click)="onSortChange(1)" [class.active]="sortOrder === 1">
+          <i class="material-icons">arrow_upward</i>
+        </button>
+        <button mat-icon-button (click)="onSortChange(-1)" [class.active]="sortOrder === -1">
+          <i class="material-icons">arrow_downward</i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Error Message -->
+    <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
+  
+    <!-- User List -->
+    <mat-list *ngIf="users.length > 0" class="user-list">
+      <!-- Header Row -->
+      <div class="user-list-header">
+          <div class="user-photo-container header-photo">Picture</div>
+          <span class="user-name header-name">Name</span>
+          <span class="user-uuid header-uuid">UUID</span>
+      </div>
+  
+      <!-- List Items -->
+      <mat-list-item *ngFor="let user of users" class="user-list-item">
+          <div class="user-info">
+              <div class="user-photo-container">
+                  <img [src]="user.picture" class="user-photo" />
+              </div>
+              <span class="user-name">{{ user.name }}</span>
+              <span class="user-uuid">{{ user.id }}</span>
+          </div>
+      </mat-list-item>
+   </mat-list>
+  
+  
+  
+    <p *ngIf="users.length === 0 && !errorMessage">No users found.</p>
+</div>

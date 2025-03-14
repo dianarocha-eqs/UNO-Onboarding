@@ -1,0 +1,129 @@
+.user-list-container {
+    font-family: 'Open Sans', sans-serif;
+    margin: 30px auto;
+    padding: 30px;
+    margin: auto;
+}
+
+.user-list-container h2 {
+    text-align: left;
+    margin-bottom: 20px;
+}
+
+.search-sort-container {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.search-bar {
+    width: 70%;
+}
+
+
+.sort-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sort-toggle button {
+    margin-left: 10px;
+    font-size: 24px;
+    cursor: pointer;
+    color: #1C30CC;
+    background-color: lightblue;
+    border-color: lightblue;
+}
+
+.sort-toggle .active {
+    color: lightblue;
+    background-color: darkblue;
+}
+
+mat-list-item {
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #ddd;
+    padding: 10px 0;
+}
+
+.user-list {
+    width: 100%;
+    color: darkgray
+}
+
+/* Header Row */
+.user-list-header {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    border-bottom: 1px solid #ccc;
+    text-align: center;
+    color: #152935;
+}
+
+.header-name {
+    font-size: 16px;
+    margin-left: 40px;
+    margin-right: auto;
+}
+
+.header-uuid {
+    font-size: 16px;
+}
+
+
+mat-list-item {
+    display: flex;
+    align-items: center;
+
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+/* User Photo */
+.user-photo-container {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    overflow: hidden;
+    margin-right: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.user-photo {
+    width: 90%;
+    height: 90%;
+    object-fit: cover;
+}
+
+/* User Name */
+.user-name {
+    font-size: 16px;
+    font-weight: 500;
+    margin-left: 40px;
+    margin-right: auto;
+}
+
+.user-uuid {
+    font-size: 16px;
+    font-weight: 500;
+    margin-left: 40px;
+}
+
+
+.error {
+    color: red;
+}
+
+.user-list-item {
+    padding-top: 30px;
+    padding-bottom: 30px;
+}

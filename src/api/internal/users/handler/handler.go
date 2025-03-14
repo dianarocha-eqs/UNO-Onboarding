@@ -200,8 +200,22 @@ func (h *UserHandlerImpl) EditUser(c *gin.Context) {
 // @Router /v1/users/list [post]
 func (h *UserHandlerImpl) ListUsers(c *gin.Context) {
 
+	// Gets token from header
+	tokenAuth, _ := c.Get("token")
+
+	// Gets role from header
+	roleAuth, _ := c.Get("role")
+
+	var str = tokenAuth.(string)
+	var role bool
+	// Checks if the role from header is the same as the role given to the user
+	var err = h.UserService.GetRoutesAuthorization(c.Request.Context(), str, &role, nil)
+	if err != nil || role != roleAuth {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Current user is not authorized to list users"})
+		return
+	}
+
 	var filter FilterSearchAndSort
-	var err error
 	if err = c.ShouldBindJSON(&filter); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

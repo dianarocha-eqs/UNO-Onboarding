@@ -1,8 +1,5 @@
 import { Component } from '@angular/core';
 import { RouterOutlet, RouterModule} from '@angular/router';
-import { FormsModule } from '@angular/forms';  // <-- Import FormsModule here
-import { BrowserModule } from '@angular/platform-browser';
-import { NgModule } from '@angular/core';
 
 @Component({
   selector: 'app-root',
@@ -15,4 +12,5 @@ import { NgModule } from '@angular/core';
   `,
 })
 export class AppComponent {
+  title = 'WebApp';
 }
