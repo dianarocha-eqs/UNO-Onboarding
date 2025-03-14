@@ -26,6 +26,11 @@ export const routes: Routes = [
       import('./sensors-list/sensors-list.routes').then((m) => m.SENSORS_ROUTES),
   },
   {
+    path: 'users',
+    loadChildren: () =>
+      import('./user-add/user-add.routes').then((m) => m.USERS_ROUTES),
+  },
+  {
     path: '**',
     redirectTo: 'home',
   },
